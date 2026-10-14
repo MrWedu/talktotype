@@ -1,1 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Choice Writer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&family=Quicksand:wght@600;700&display=swap');
 
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #fdf4ff;
+            background-image: radial-gradient(#fbcfe8 2px, transparent 2px);
+            background-size: 30px 30px;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1, .kid-font {
+            font-family: 'Comic Neue', cursive;
+        }
+
+        /* Fun, bouncy buttons */
+        .bouncy-btn {
+            transition: transform 0.1s cubic-bezier(0.4, 0.0, 0.2, 1), box-shadow 0.1s ease;
+            box-shadow: 0 8px 0px 0px rgba(0,0,0,0.2);
+            user-select: none;
+        }
+        
+        .bouncy-btn:active:not(:disabled) {
+            transform: translateY(8px);
+            box-shadow: 0 0px 0px 0px rgba(0,0,0,0.2);
+        }
+
+        .bouncy-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: translateY(8px);
+            box-shadow: 0 0px 0px 0px rgba(0,0,0,0.2);
+        }
+
+        .btn-speak { background-color: #4ade80; color: #064e3b; box-shadow: 0 8px 0px 0px #16a34a; border: 3px solid #16a34a; }
+        .btn-speak:active:not(:disabled) { box-shadow: 0 0px 0px 0px #16a34a; }
+        .btn-speak.is-listening { 
+            background-color: #fbbf24; 
+            color: #78350f; 
+            box-shadow: 0 8px 0px 0px #d97706; 
+            border-color: #d97706;
+            animation: pulse 1s infinite;
+        }
+
+        .btn-clear { background-color: #f87171; color: #450a0a; box-shadow: 0 8px 0px 0px #dc2626; border: 3px solid #dc2626; }
+        .btn-clear:active:not(:disabled) { box-shadow: 0 0px 0px 0px #dc2626; }
+
+        /* Option cards */
+        .option-card {
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+            transform: scale(0.1);
+            background: linear-gradient(145deg, #a78bfa, #8b5cf6);
+            box-shadow: 0 8px 0px 0px #6d28d9;
+            border: 3px solid #6d28d9;
+            transition: all 0.2s ease;
+        }
+
+        .option-card:hover {
+            transform: scale(1.05) translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .option-card:active {
+            transform: scale(0.95) translateY(8px) !important;
+            box-shadow: 0 0px 0px 0px #6d28d9 !important;
+        }
+
+        /* Animations */
+        @keyframes popIn {
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
+        .shake-error {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        .word-token {
+            animation: popIn 0.3s ease-out forwards;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <header class="text-center w-full max-w-3xl mx-auto mb-6">
+        <h1 class="text-4xl sm:text-5xl font-bold text-fuchsia-700 mb-3 drop-shadow-sm">🎙️ Voice Choice Writer ✍️</h1>
+        <div class="bg-white/80 border-2 border-fuchsia-200 rounded-full px-6 py-2 inline-block shadow-sm">
+            <p class="text-lg text-fuchsia-800 font-bold">1. Tap "Speak" &nbsp; 2. Say a word &nbsp; 3. Hover to listen, Click to pick!</p>
+        </div>
+    </header>
+
+    <main class="w-full max-w-4xl mx-auto flex flex-col gap-6">
+        
+        <!-- Sentence Box -->
+        <div id="sentence-box" class="kid-font min-h-[150px] w-full bg-white border-4 border-dashed border-sky-400 rounded-3xl p-6 text-4xl sm:text-5xl text-slate-800 shadow-lg flex flex-wrap content-start gap-x-3 gap-y-2">
+            <!-- Words append here -->
+        </div>
+
+        <!-- Controls -->
+        <div class="flex flex-wrap justify-center items-center gap-6 w-full">
+            <button id="btn-speak" class="bouncy-btn btn-speak px-8 py-4 rounded-2xl text-2xl font-bold flex items-center gap-3">
+                <span class="text-3xl">🎤</span> <span id="speak-text">Speak a Word</span>
+            </button>
+            
+            <button id="btn-clear" class="bouncy-btn btn-clear px-6 py-4 rounded-2xl text-xl font-bold flex items-center gap-2">
+                <span class="text-2xl">🗑️</span> Clear Sentence
+            </button>
+        </div>
+
+        <!-- Status Message -->
+        <div id="status-message" class="text-2xl font-bold text-sky-600 h-10 text-center flex items-center justify-center bg-white/60 rounded-full px-6 py-2 max-w-fit mx-auto shadow-sm transition-colors">
+            Ready to build a story! ✨
+        </div>
+
+        <!-- Warning for Local Files -->
+        <div id="local-file-warning" class="hidden text-center text-amber-700 bg-amber-100 p-3 rounded-xl max-w-2xl mx-auto border-2 border-amber-300 font-semibold">
+            ⚠️ Note: If your browser keeps asking for microphone permission every time, it's because this file is opened locally. For the smoothest experience, this tool works best when hosted on a secure website.
+        </div>
+
+        <!-- Options Container -->
+        <div id="options-container" class="flex flex-wrap justify-center items-center gap-6 w-full min-h-[140px] pb-12">
+            <!-- Option Buttons appear here -->
+        </div>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnSpeak = document.getElementById('btn-speak');
+            const speakText = document.getElementById('speak-text');
+            const btnClear = document.getElementById('btn-clear');
+            const sentenceBox = document.getElementById('sentence-box');
+            const statusMessage = document.getElementById('status-message');
+            const optionsContainer = document.getElementById('options-container');
+            const localFileWarning = document.getElementById('local-file-warning');
+
+            // Show warning if running from file:// protocol (causes permission bugs in Chrome)
+            if (window.location.protocol === 'file:') {
+                localFileWarning.classList.remove('hidden');
+            }
+
+            // Web Speech API Setup
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let recognition = null;
+            let isListening = false;
+
+            if (!SpeechRecognition) {
+                updateStatus("Oh no! Voice typing isn't supported here. Try Google Chrome! 😢", "text-red-600");
+                btnSpeak.disabled = true;
+                return;
+            }
+
+            // Initialize Recognition
+            recognition = new SpeechRecognition();
+            recognition.maxAlternatives = 3; 
+            recognition.continuous = false; 
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            // --- Text-to-Speech Helper ---
+            function readWordAloud(word) {
+                if (!('speechSynthesis' in window)) return;
+                window.speechSynthesis.cancel(); // Stop current speech
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.rate = 0.85; // Slightly slower for kids
+                utterance.pitch = 1.1; // Friendly pitch
+                window.speechSynthesis.speak(utterance);
+            }
+
+            // Helper to warm up the TTS engine on first interaction
+            function warmupTTS() {
+                if ('speechSynthesis' in window) {
+                    let s = new SpeechSynthesisUtterance('');
+                    window.speechSynthesis.speak(s);
+                }
+                // Remove listener after first interaction
+                document.removeEventListener('click', warmupTTS);
+            }
+            document.addEventListener('click', warmupTTS);
+
+            // --- UI Updaters ---
+            function updateStatus(text, colorClass = "text-sky-600") {
+                statusMessage.innerText = text;
+                statusMessage.className = `text-2xl font-bold h-10 text-center flex items-center justify-center bg-white/60 rounded-full px-6 py-2 max-w-fit mx-auto shadow-sm transition-colors ${colorClass}`;
+            }
+
+            function triggerErrorShake() {
+                statusMessage.classList.add('shake-error');
+                setTimeout(() => statusMessage.classList.remove('shake-error'), 400);
+            }
+
+            // --- Recognition Events ---
+            recognition.onstart = () => {
+                isListening = true;
+                btnSpeak.classList.add('is-listening');
+                speakText.innerText = "Listening...";
+                updateStatus("I'm listening! Speak one word loudly and clearly... 👂", "text-amber-600");
+                optionsContainer.innerHTML = '';
+            };
+
+            recognition.onresult = (event) => {
+                const results = event.results[0];
+                optionsContainer.innerHTML = '';
+                
+                let uniqueWords = new Set();
+                let delay = 0;
+
+                for (let i = 0; i < results.length; i++) {
+                    let rawWord = results[i].transcript.trim();
+                    let cleanWord = rawWord.replace(/[.,!?]/g, ''); // Remove punctuation
+                    let lowercaseWord = cleanWord.toLowerCase();
+                    
+                    if (lowercaseWord && !uniqueWords.has(lowercaseWord)) {
+                        uniqueWords.add(lowercaseWord);
+                        
+                        // Capitalize if it's the first word in the sentence box
+                        let displayWord = cleanWord;
+                        if (sentenceBox.innerText.trim() === '') {
+                            displayWord = displayWord.charAt(0).toUpperCase() + displayWord.slice(1);
+                        }
+
+                        // Create Button Element
+                        const btn = document.createElement('button');
+                        btn.className = 'option-card kid-font text-white text-4xl sm:text-5xl px-8 py-6 rounded-3xl cursor-pointer flex items-center justify-center';
+                        btn.style.animationDelay = `${delay}s`;
+                        btn.innerText = displayWord;
+
+                        // 1. Hover to read aloud
+                        btn.addEventListener('mouseenter', () => {
+                            readWordAloud(cleanWord);
+                        });
+
+                        // 2. Click to select
+                        btn.addEventListener('click', () => {
+                            const wordSpan = document.createElement('span');
+                            wordSpan.className = 'word-token';
+                            wordSpan.innerText = displayWord + " ";
+                            sentenceBox.appendChild(wordSpan);
+                            
+                            // Cleanup
+                            optionsContainer.innerHTML = '';
+                            updateStatus("Great job! Ready for the next word. ✨", "text-green-600");
+                        });
+
+                        optionsContainer.appendChild(btn);
+                        delay += 0.1; // Stagger the pop-in animation
+
+                        if (uniqueWords.size >= 3) break;
+                    }
+                }
+
+                if (uniqueWords.size > 0) {
+                    updateStatus("Hover to hear a word, click to choose it! 👇", "text-purple-600");
+                } else {
+                    updateStatus("I didn't quite catch that. Try again! 🤔", "text-red-500");
+                    triggerErrorShake();
+                }
+            };
+
+            recognition.onerror = (event) => {
+                let msg = "Oops! Something went wrong.";
+                if (event.error === 'not-allowed') {
+                    msg = "Microphone blocked! Please click 'Allow' when the browser asks. 🛑";
+                } else if (event.error === 'no-speech') {
+                    msg = "I didn't hear anything. Try speaking closer to the mic! 🎙️";
+                } else if (event.error === 'network') {
+                    msg = "Internet connection needed for voice typing! 🌐";
+                }
+                
+                updateStatus(msg, "text-red-600");
+                triggerErrorShake();
+                
+                // If it fails immediately due to permissions, ensure UI resets
+                isListening = false;
+                btnSpeak.classList.remove('is-listening');
+                speakText.innerText = "Speak a Word";
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                btnSpeak.classList.remove('is-listening');
+                speakText.innerText = "Speak a Word";
+                
+                // If the user didn't speak and no error fired (sometimes happens on timeout)
+                if (statusMessage.innerText.includes("I'm listening")) {
+                    updateStatus("Listening stopped. Try clicking 'Speak' again! 🛑", "text-amber-600");
+                }
+            };
+
+            // --- Button Listeners ---
+            btnSpeak.addEventListener('click', () => {
+                if (isListening) {
+                    recognition.stop();
+                } else {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        // Catch error if recognition is already started internally
+                        console.error(e);
+                    }
+                }
+            });
+
+            btnClear.addEventListener('click', () => {
+                sentenceBox.innerHTML = '';
+                optionsContainer.innerHTML = '';
+                updateStatus("Sentence cleared! Let's start fresh. 🧹", "text-sky-600");
+                
+                // Visual clear feedback
+                sentenceBox.classList.add('shake-error');
+                setTimeout(() => sentenceBox.classList.remove('shake-error'), 400);
+            });
+        });
+    </script>
+</body>
+</html>
