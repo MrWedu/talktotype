@@ -2,50 +2,68 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Voice Choice Writer</title>
     <style>
+        /* Force the app to fit the screen exactly without scrolling */
+        * { box-sizing: border-box; }
+        
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
             background-color: #e0f7fa;
             text-align: center;
-            padding: 20px;
+            padding: 10px 20px;
+            margin: 0;
             color: #333;
+            height: 100vh; /* 100% of Viewport Height */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevent full page scrolling */
         }
-        h1 { color: #00796b; }
         
-        #sentence-box {
-            background: white;
-            border: 4px dashed #00bcd4;
-            border-radius: 15px;
-            min-height: 120px;
-            padding: 20px;
-            font-size: 36px;
-            margin: 20px auto;
-            max-width: 800px;
-            text-align: left;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            line-height: 1.5;
+        h1 { 
+            color: #00796b; 
+            margin: 10px 0;
+            font-size: clamp(24px, 4vw, 32px); /* Scales font size down on smaller screens */
         }
-
+        
         .controls-group {
-            margin: 15px 0;
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
             gap: 10px;
+            margin: 5px 0;
+        }
+
+        /* The Sentence Box now expands to fill the middle space */
+        #sentence-box {
+            background: white;
+            border: 4px dashed #00bcd4;
+            border-radius: 15px;
+            flex-grow: 1; /* Pushes everything else to top and bottom */
+            padding: 20px;
+            font-size: clamp(24px, 4vw, 36px);
+            margin: 10px auto;
+            width: 100%;
+            max-width: 900px;
+            text-align: left;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            line-height: 1.5;
+            overflow-y: auto; /* If sentence gets HUGE, only this box scrolls */
+            white-space: pre-wrap; /* Forces spaces to be respected */
         }
 
         button {
             font-family: inherit;
-            font-size: 22px;
-            padding: 12px 24px;
+            font-size: clamp(16px, 2.5vw, 22px);
+            padding: 10px 20px;
             border-radius: 12px;
             border: none;
             cursor: pointer;
             transition: transform 0.1s, box-shadow 0.1s;
             box-shadow: 0 4px #999;
         }
+        
         button:active {
             transform: translateY(4px);
             box-shadow: 0 0px #999;
@@ -63,31 +81,37 @@
         #clear-btn { background-color: #f44336; color: white; box-shadow: 0 4px #d32f2f; }
         #clear-btn:active { box-shadow: 0 0px #d32f2f; }
         
+        #read-sentence-btn { background-color: #9c27b0; color: white; box-shadow: 0 4px #7b1fa2; }
+        #read-sentence-btn:active { box-shadow: 0 0px #7b1fa2; }
+        
         #options-container {
             display: flex;
             justify-content: center;
-            flex-wrap: wrap;
+            align-items: center;
             gap: 15px;
-            margin-top: 30px;
-            min-height: 80px;
+            min-height: 100px;
+            margin: 10px 0;
+            flex-wrap: nowrap; /* Keep on one line to fit screen */
         }
 
         .option-btn {
             background-color: #9c27b0;
             color: white;
             box-shadow: 0 4px #7b1fa2;
-            font-size: 32px;
-            padding: 20px 40px;
+            font-size: clamp(20px, 4vw, 32px); /* Scales dynamically */
+            padding: 15px 30px;
+            flex: 1; /* Stretches buttons evenly */
+            max-width: 30%;
             animation: popIn 0.3s ease-out;
+            word-wrap: break-word; /* Prevents long words breaking layout */
         }
         .option-btn:active { box-shadow: 0 0px #7b1fa2; }
 
         #status {
-            font-size: 20px;
+            font-size: clamp(16px, 2.5vw, 20px);
             color: #555;
-            margin-top: 10px;
             font-weight: bold;
-            height: 30px;
+            min-height: 30px;
         }
 
         @keyframes popIn {
@@ -100,7 +124,7 @@
 
     <h1>🎙️ Voice Choice Writer ✍️</h1>
     
-    <!-- Top Controls: Listening and Punctuation -->
+    <!-- Top Controls -->
     <div class="controls-group">
         <button id="listen-btn">🎤 Start Listening</button>
         <button id="comma-btn" class="punct-btn">, Comma</button>
@@ -110,17 +134,19 @@
     <!-- The Sentence -->
     <div id="sentence-box"></div>
     
-    <!-- Bottom Controls: Actions -->
+    <!-- Bottom Controls -->
     <div class="controls-group">
-        <button id="copy-btn" class="action-btn">📋 Copy to Google Docs</button>
+        <button id="read-sentence-btn">🔊 Read Sentence</button>
+        <button id="copy-btn" class="action-btn">📋 Copy to Docs</button>
         <button id="clear-btn">🗑️ Clear</button>
     </div>
 
     <div id="status">Click "Start Listening" to begin!</div>
+    
+    <!-- Choices appear here -->
     <div id="options-container"></div>
 
     <script>
-        // Setup Web Speech API
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
         let isAutoListening = false;
@@ -132,13 +158,14 @@
             recognition.maxAlternatives = 3; 
             recognition.continuous = false; 
             recognition.interimResults = false;
-            recognition.lang = 'en-GB'; // Tuned for UK English!
+            recognition.lang = 'en-GB';
 
             const listenBtn = document.getElementById('listen-btn');
             const commaBtn = document.getElementById('comma-btn');
             const periodBtn = document.getElementById('period-btn');
             const copyBtn = document.getElementById('copy-btn');
             const clearBtn = document.getElementById('clear-btn');
+            const readSentenceBtn = document.getElementById('read-sentence-btn');
             const sentenceBox = document.getElementById('sentence-box');
             const optionsContainer = document.getElementById('options-container');
             const statusText = document.getElementById('status');
@@ -149,11 +176,11 @@
                 try {
                     recognition.start();
                     statusText.innerText = "Listening... speak your word! 👂";
-                    listenBtn.style.backgroundColor = "#FFEB3B"; // yellow
+                    listenBtn.style.backgroundColor = "#FFEB3B"; 
                     listenBtn.style.color = "#333";
                     listenBtn.innerText = "Listening...";
                 } catch (e) {
-                    // Prevents error if microphone is already engaged
+                    // Ignore if already started
                 }
             }
 
@@ -163,21 +190,20 @@
                 listenBtn.innerText = "🎤 Start Listening";
             }
 
-            // Handles spacing so punctuation looks correct (e.g. "word ." becomes "word.")
             function addPunctuation(mark) {
-                let text = sentenceBox.innerText;
+                // Using textContent and forcing a space prevents the missing space bug
+                let text = sentenceBox.textContent;
                 if (text.endsWith(' ')) {
                     text = text.slice(0, -1);
                 }
-                sentenceBox.innerText = text + mark + ' ';
+                sentenceBox.textContent = text + mark + ' ';
             }
 
-            // Speak word aloud on hover using Text-to-Speech
             function speakWord(word) {
                 if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel(); // Stop anything currently speaking
+                    window.speechSynthesis.cancel();
                     const utterance = new SpeechSynthesisUtterance(word);
-                    utterance.rate = 0.8; // Slightly slower for clarity
+                    utterance.rate = 0.8; 
                     window.speechSynthesis.speak(utterance);
                 }
             }
@@ -186,40 +212,47 @@
 
             listenBtn.addEventListener('click', () => {
                 optionsContainer.innerHTML = '';
-                isAutoListening = true; // Turn on the auto-loop
+                isAutoListening = true;
                 triggerListen();
             });
 
             commaBtn.addEventListener('click', () => {
                 addPunctuation(',');
-                if (isAutoListening) triggerListen(); // Keep listening loop going
+                if (isAutoListening) triggerListen(); 
             });
 
             periodBtn.addEventListener('click', () => {
                 addPunctuation('.');
-                isAutoListening = false; // Turn OFF listening loop when sentence ends
+                isAutoListening = false; 
                 statusText.innerText = "Sentence complete! Ready for a new one.";
                 optionsContainer.innerHTML = '';
                 stopListeningUI();
             });
 
             copyBtn.addEventListener('click', () => {
-                const text = sentenceBox.innerText.trim();
+                const text = sentenceBox.textContent.trim();
                 if (text) {
                     navigator.clipboard.writeText(text).then(() => {
                         const originalText = copyBtn.innerText;
-                        copyBtn.innerText = "✅ Copied to Clipboard!";
-                        setTimeout(() => copyBtn.innerText = originalText, 2500); // Change back after 2.5s
+                        copyBtn.innerText = "✅ Copied!";
+                        setTimeout(() => copyBtn.innerText = originalText, 2500);
                     });
                 }
             });
 
             clearBtn.addEventListener('click', () => {
-                sentenceBox.innerText = '';
+                sentenceBox.textContent = '';
                 optionsContainer.innerHTML = '';
                 isAutoListening = false;
                 statusText.innerText = "Cleared. Click start when ready.";
                 stopListeningUI();
+            });
+
+            readSentenceBtn.addEventListener('click', () => {
+                const text = sentenceBox.textContent.trim();
+                if (text) {
+                    speakWord(text); // Reusing the speech function for the whole sentence
+                }
             });
 
             // --- SPEECH RECOGNITION LOGIC --- //
@@ -243,23 +276,19 @@
                         btn.className = 'option-btn';
                         btn.innerText = word;
                         
-                        // Read aloud on hover
                         btn.onmouseenter = () => speakWord(word);
 
-                        // Word selected by child
                         btn.onclick = () => {
-                            // Capitalize if it's the first word of the box or right after a full stop
-                            if (sentenceBox.innerText.length === 0 || sentenceBox.innerText.endsWith('. ')) {
+                            if (sentenceBox.textContent.length === 0 || sentenceBox.textContent.endsWith('. ')) {
                                 word = word.charAt(0).toUpperCase() + word.slice(1);
                             }
                             
-                            sentenceBox.innerText += word + ' ';
+                            // Using textContent to preserve the trailing spaces
+                            sentenceBox.textContent += word + ' ';
                             optionsContainer.innerHTML = '';
                             
-                            // AUTO-LISTEN TRIGGER
                             if (isAutoListening) {
                                 statusText.innerText = "Great! Getting ready for next word...";
-                                // Wait just under 1 second so they see the word appear before mic starts again
                                 setTimeout(() => {
                                     if (isAutoListening) triggerListen();
                                 }, 800);
@@ -284,7 +313,6 @@
             recognition.onerror = (event) => {
                 if (event.error === 'no-speech') {
                     statusText.innerText = "Didn't hear anything. Taking a break.";
-                    // If no speech is detected, turn off auto-listen so it doesn't loop infinitely
                     isAutoListening = false;
                     stopListeningUI();
                 } else {
@@ -295,7 +323,6 @@
             };
 
             recognition.onend = () => {
-                // Ensure UI goes back to green button if we aren't looping
                 if (optionsContainer.innerHTML === '' && !isAutoListening) {
                     stopListeningUI();
                 }
