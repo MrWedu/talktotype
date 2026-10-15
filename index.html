@@ -21,6 +21,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
         }
         
         h1 { 
@@ -59,6 +60,7 @@
             padding: 6px 12px;
             border-radius: 10px;
             border: 2px solid #00796b;
+            flex-wrap: wrap;
         }
 
         .mode-btn {
@@ -68,6 +70,13 @@
             box-shadow: 0 3px #004d40;
             padding: 6px 14px;
             flex: 1;
+            min-width: 130px;
+        }
+        
+        #contrast-toggle-btn {
+            background-color: #37474f;
+            color: white;
+            box-shadow: 0 3px #263238;
         }
 
         #sentence-box {
@@ -147,7 +156,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            flex-wrap: nowrap;
+            flex-wrap: wrap;
             gap: 5px;
             width: 100%;
         }
@@ -183,13 +192,14 @@
             border: 2px solid #000000;
         }
         
-        .action-btn { background-color: #0277bd; color: #ffffff; box-shadow: 0 3px #01579b; }
-        #print-btn { background-color: #00796b; color: #ffffff; box-shadow: 0 3px #004d40; font-weight: bold; }
-        #undo-action-btn { background-color: #f57c00; color: #ffffff; box-shadow: 0 3px #e65100; font-weight: bold; }
-        #delete-btn { background-color: #e53935; color: #ffffff; box-shadow: 0 3px #b71c1c; font-weight: bold; }
-        #clear-btn { background-color: #424242; color: #ffffff; box-shadow: 0 3px #212121; }
-        #restore-btn { background-color: #00897b; color: #ffffff; box-shadow: 0 3px #004d40; font-weight: bold; display: none; }
-        #read-sentence-btn { background-color: #6a1b9a; color: #ffffff; box-shadow: 0 3px #4a148c; }
+        .action-btn { background-color: #0277bd; color: #ffffff; box-shadow: 0 3px #01579b; flex: 1;}
+        #print-btn { background-color: #00796b; color: #ffffff; box-shadow: 0 3px #004d40; font-weight: bold; flex: 1;}
+        #undo-action-btn { background-color: #f57c00; color: #ffffff; box-shadow: 0 3px #e65100; font-weight: bold; flex: 1;}
+        #delete-btn { background-color: #e53935; color: #ffffff; box-shadow: 0 3px #b71c1c; font-weight: bold; flex: 1;}
+        #capitalize-btn { background-color: #43a047; color: #ffffff; box-shadow: 0 3px #1b5e20; font-weight: bold; flex: 1; }
+        #clear-btn { background-color: #424242; color: #ffffff; box-shadow: 0 3px #212121; flex: 1;}
+        #restore-btn { background-color: #00897b; color: #ffffff; box-shadow: 0 3px #004d40; font-weight: bold; display: none; flex: 1;}
+        #read-sentence-btn { background-color: #6a1b9a; color: #ffffff; box-shadow: 0 3px #4a148c; flex: 1;}
         
         #options-container {
             display: flex;
@@ -218,6 +228,40 @@
             font-weight: bold;
             min-height: 24px;
             margin: 2px 0;
+            transition: color 0.3s;
+        }
+
+        /* HIGH CONTRAST MODE STYLES */
+        body.high-contrast {
+            background-color: #121212;
+            color: #ffffff;
+        }
+        body.high-contrast h1 { color: #ffeb3b; }
+        body.high-contrast #status { color: #00e5ff; }
+        body.high-contrast .edit-header { background: #000000; border-color: #ffeb3b; }
+        body.high-contrast #sentence-box {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            border: 4px solid #ffeb3b;
+        }
+        body.high-contrast #sentence-box.child-edit-active {
+            background-color: #000000 !important;
+            border: 4px solid #00e5ff !important;
+        }
+        body.high-contrast #sentence-box.teacher-edit-active {
+            background-color: #000000 !important;
+            border: 4px solid #ff5252 !important;
+        }
+        body.high-contrast .child-gap { background-color: #333; }
+        body.high-contrast .child-gap:hover { background-color: #555; }
+        body.high-contrast .child-word:hover { background-color: #333; border-color: #ffeb3b; }
+        body.high-contrast .active-child-target {
+            background-color: #000000 !important;
+            border: 2px solid #00e5ff !important;
+            color: #00e5ff;
+        }
+        body.high-contrast button {
+            border: 2px solid #ffffff;
         }
 
         .modal-overlay {
@@ -243,6 +287,7 @@
             box-shadow: 0 8px 16px rgba(0,0,0,0.3);
             text-align: center;
             animation: popIn 0.2s ease-out;
+            color: black;
         }
 
         .modal-box h2 {
@@ -283,12 +328,12 @@
         }
 
         @media print {
-            body { background-color: white !important; padding: 0 !important; margin: 0 !important; height: auto !important; overflow: visible !important; }
+            body { background-color: white !important; padding: 0 !important; margin: 0 !important; height: auto !important; overflow: visible !important; color: black !important; }
             h1, .right-panel, .edit-header, .modal-overlay, #status { display: none !important; }
             .app-container { display: block !important; max-width: 100% !important; height: auto !important; }
             .left-panel { width: 100% !important; height: auto !important; }
             #sentence-box {
-                border: none !important; box-shadow: none !important; padding: 0 !important; font-size: 24pt !important; color: black !important;
+                border: none !important; box-shadow: none !important; padding: 0 !important; font-size: 24pt !important; color: black !important; background: white !important;
                 font-family: Arial, sans-serif !important; line-height: 1.6 !important; overflow: visible !important; white-space: pre-wrap !important;
             }
         }
@@ -304,6 +349,7 @@
             <div class="edit-header">
                 <button id="edit-toggle-btn" class="mode-btn">✏️ Edit Mode: OFF</button>
                 <button id="teacher-toggle-btn" class="mode-btn">👩‍🏫 Teacher Mode: OFF</button>
+                <button id="contrast-toggle-btn" class="mode-btn">🌓 High Contrast</button>
             </div>
             <div id="sentence-box" contenteditable="false"></div>
         </div>
@@ -324,9 +370,13 @@
             </div>
 
             <div class="controls-group">
-                <button id="read-sentence-btn">🔊 Read</button>
                 <button id="undo-action-btn">↺ Undo</button>
                 <button id="delete-btn">⌫ Delete</button>
+                <button id="capitalize-btn">🔠 Capitalize</button>
+            </div>
+
+            <div class="controls-group">
+                <button id="read-sentence-btn">🔊 Read</button>
                 <button id="copy-btn" class="action-btn">📋 Copy</button>
                 <button id="print-btn">🖨️ Print</button>
                 <button id="clear-btn">🗑️ Clear</button>
@@ -371,6 +421,7 @@
         
         let isEditMode = false; // Child Edit Mode
         let isTeacherMode = false;
+        let isHighContrast = false;
 
         let restartTimer = null;
         let audioCtx = null;
@@ -388,6 +439,7 @@
         
         const editToggleBtn = document.getElementById('edit-toggle-btn');
         const teacherToggleBtn = document.getElementById('teacher-toggle-btn');
+        const contrastToggleBtn = document.getElementById('contrast-toggle-btn');
 
         if (!SpeechRecognition) {
             statusText.innerText = "Oops! Your browser doesn't support voice typing. Try Google Chrome!";
@@ -464,6 +516,12 @@
             }
 
             // --- MODE TOGGLES --- //
+            contrastToggleBtn.addEventListener('click', () => {
+                isHighContrast = !isHighContrast;
+                document.body.classList.toggle('high-contrast', isHighContrast);
+                contrastToggleBtn.innerText = isHighContrast ? "☀️ Normal View" : "🌓 High Contrast";
+            });
+
             function updateModes() {
                 const currentExtractedText = getCurrentText();
 
@@ -740,6 +798,25 @@
                     statusText.innerText = "Undo successful!";
                 } else {
                     statusText.innerText = "Nothing to undo.";
+                }
+            });
+
+            // CAPITALIZE Action Button Handler
+            document.getElementById('capitalize-btn').addEventListener('click', () => {
+                if (isEditMode) {
+                    const activeEl = document.querySelector('.active-child-target');
+                    if (activeEl && activeEl.classList.contains('child-word')) {
+                        saveStateToHistory();
+                        let text = activeEl.innerText;
+                        activeEl.innerText = text.charAt(0).toUpperCase() + text.slice(1);
+                        renderChildSpans(getCurrentText());
+                        localStorage.setItem('saved_voice_writer_text', getCurrentText());
+                        statusText.innerText = "Capitalized!";
+                    } else {
+                        statusText.innerText = "Click a word (yellow border) to capitalize it!";
+                    }
+                } else {
+                    statusText.innerText = "Switch to ✏️ Edit Mode to use Capitalize!";
                 }
             });
 
