@@ -27,7 +27,6 @@
             flex-shrink: 0;
         }
 
-        /* Two-Column App Layout */
         .app-container {
             display: flex;
             flex-direction: row;
@@ -40,30 +39,98 @@
             position: relative;
         }
 
-        /* Left Column: Scrollable Text Box */
         .left-panel {
             flex: 1.2;
             display: flex;
             flex-direction: column;
             height: 100%;
+            gap: 6px;
+        }
+
+        .edit-header {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            align-items: center;
+            background: #b2dfdb;
+            padding: 6px 12px;
+            border-radius: 10px;
+            border: 2px solid #00796b;
+        }
+
+        .mode-btn {
+            background-color: #00796b;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 3px #004d40;
+            padding: 6px 14px;
+            flex: 1;
         }
 
         #sentence-box {
             background: white;
             border: 4px dashed #00bcd4;
             border-radius: 15px;
-            height: 100%;
+            flex-grow: 1;
             padding: 18px;
             font-size: clamp(22px, 3.2vw, 30px);
             text-align: left;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            line-height: 1.5;
+            line-height: 1.6;
             overflow-y: auto;
             white-space: pre-wrap;
             word-break: break-word;
+            outline: none;
+            transition: all 0.3s ease;
         }
 
-        /* Right Column: Controls and Options */
+        /* CHILD EDIT MODE STYLES */
+        #sentence-box.child-edit-active {
+            border: 4px solid #ff9800 !important;
+            background-color: #fff8e1 !important;
+            white-space: normal; /* Better for dynamic spans */
+        }
+        
+        .child-gap {
+            display: inline-block;
+            width: 22px;
+            height: 28px;
+            margin: 0 2px;
+            background-color: #e0f2f1;
+            border-radius: 4px;
+            cursor: pointer;
+            vertical-align: middle;
+            transition: background 0.2s;
+        }
+        .child-gap:hover { background-color: #b2dfdb; }
+        
+        .child-word {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .child-word:hover {
+            background-color: #fff9c4;
+            border-color: #fbc02d;
+        }
+
+        .active-child-target {
+            background-color: #ffeb3b !important;
+            border: 2px solid #f57f17 !important;
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            z-index: 10;
+        }
+
+        /* TEACHER MODE STYLES */
+        #sentence-box.teacher-edit-active {
+            border: 4px solid #9c27b0 !important;
+            background-color: #f3e5f5 !important;
+        }
+
         .right-panel {
             flex: 1;
             display: flex;
@@ -73,20 +140,19 @@
             justify-content: flex-start;
         }
 
-        /* Compact single row control groups */
         .controls-group {
             display: flex;
             justify-content: center;
             align-items: center;
             flex-wrap: nowrap;
-            gap: 6px;
+            gap: 5px;
             width: 100%;
         }
 
         button {
             font-family: inherit;
-            font-size: clamp(14px, 1.6vw, 17px);
-            padding: 8px 12px;
+            font-size: clamp(13px, 1.5vw, 16px);
+            padding: 8px 10px;
             border-radius: 10px;
             border: none;
             cursor: pointer;
@@ -103,19 +169,19 @@
         #listen-btn { background-color: #2e7d32; color: #ffffff; box-shadow: 0 3px #1b5e20; font-weight: bold; flex: 1; }
         #stop-btn { background-color: #c2185b; color: #ffffff; box-shadow: 0 3px #880e4f; font-weight: bold; flex: 1; }
         
-        /* High-Contrast Dyslexia-Friendly Punctuation Styling */
         .punct-btn { 
             background-color: #1a237e; 
             color: #ffffff; 
             box-shadow: 0 3px #0d47a1; 
             font-size: 22px;
             font-weight: 900;
-            padding: 6px 16px;
+            padding: 6px 14px;
             flex: 1;
             border: 2px solid #000000;
         }
         
         .action-btn { background-color: #0277bd; color: #ffffff; box-shadow: 0 3px #01579b; }
+        #print-btn { background-color: #00796b; color: #ffffff; box-shadow: 0 3px #004d40; font-weight: bold; }
         #undo-btn { background-color: #e65100; color: #ffffff; box-shadow: 0 3px #bf360c; font-weight: bold; }
         #clear-btn { background-color: #d32f2f; color: #ffffff; box-shadow: 0 3px #b71c1c; }
         #restore-btn { background-color: #00897b; color: #ffffff; box-shadow: 0 3px #004d40; font-weight: bold; display: none; }
@@ -149,14 +215,13 @@
             margin: 2px 0;
         }
 
-        /* Modal Overlay */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.6);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -170,7 +235,7 @@
             border: 4px solid #d32f2f;
             max-width: 420px;
             width: 90%;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
             text-align: center;
             animation: popIn 0.2s ease-out;
         }
@@ -180,6 +245,9 @@
             color: #d32f2f;
             font-size: 26px;
         }
+        
+        .teacher-modal-box h2 { color: #9c27b0; }
+        .teacher-modal-box { border-color: #9c27b0; }
 
         .modal-box p {
             font-size: 18px;
@@ -194,7 +262,8 @@
         }
 
         #confirm-clear-btn { background-color: #d32f2f; color: white; box-shadow: 0 3px #b71c1c; font-weight: bold; }
-        #cancel-clear-btn { background-color: #757575; color: white; box-shadow: 0 3px #424242; }
+        #confirm-teacher-btn { background-color: #9c27b0; color: white; box-shadow: 0 3px #7b1fa2; font-weight: bold; }
+        .cancel-btn { background-color: #757575; color: white; box-shadow: 0 3px #424242; }
 
         @keyframes popIn {
             0% { transform: scale(0.8); opacity: 0; }
@@ -207,6 +276,17 @@
             #options-container { flex-direction: row; }
             .option-btn { flex: 1; }
         }
+
+        @media print {
+            body { background-color: white !important; padding: 0 !important; margin: 0 !important; height: auto !important; overflow: visible !important; }
+            h1, .right-panel, .edit-header, .modal-overlay, #status { display: none !important; }
+            .app-container { display: block !important; max-width: 100% !important; height: auto !important; }
+            .left-panel { width: 100% !important; height: auto !important; }
+            #sentence-box {
+                border: none !important; box-shadow: none !important; padding: 0 !important; font-size: 24pt !important; color: black !important;
+                font-family: Arial, sans-serif !important; line-height: 1.6 !important; overflow: visible !important; white-space: pre-wrap !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -214,20 +294,22 @@
     <h1>🎙️ Voice Choice Writer ✍️</h1>
     
     <div class="app-container">
-        <!-- LEFT: Scrollable Sentence Box -->
+        <!-- LEFT: Scrollable Sentence Box & Edit Bar -->
         <div class="left-panel">
-            <div id="sentence-box"></div>
+            <div class="edit-header">
+                <button id="edit-toggle-btn" class="mode-btn">✏️ Edit Mode: OFF</button>
+                <button id="teacher-toggle-btn" class="mode-btn">👩‍🏫 Teacher Mode: OFF</button>
+            </div>
+            <div id="sentence-box" contenteditable="false"></div>
         </div>
 
         <!-- RIGHT: Controls and Choices -->
         <div class="right-panel">
-            <!-- Listening Controls -->
             <div class="controls-group">
                 <button id="listen-btn">🎤 Start Listening</button>
                 <button id="stop-btn">🛑 Stop Listening</button>
             </div>
 
-            <!-- High Contrast Punctuation Buttons -->
             <div class="controls-group">
                 <button id="comma-btn" class="punct-btn">,</button>
                 <button id="period-btn" class="punct-btn">.</button>
@@ -235,30 +317,41 @@
                 <button id="exclamation-btn" class="punct-btn">!</button>
             </div>
 
-            <!-- Action Controls Compact Row -->
             <div class="controls-group">
                 <button id="read-sentence-btn">🔊 Read</button>
                 <button id="undo-btn">⌫ Delete</button>
                 <button id="copy-btn" class="action-btn">📋 Copy</button>
+                <button id="print-btn">🖨️ Print</button>
                 <button id="clear-btn">🗑️ Clear</button>
                 <button id="restore-btn">↩️ Restore</button>
             </div>
 
             <div id="status">Click "Start Listening" when ready!</div>
             
-            <!-- Word Choices Output -->
             <div id="options-container"></div>
         </div>
     </div>
 
-    <!-- Confirmation Modal Dialog -->
+    <!-- CLEAR CONFIRMATION MODAL -->
     <div id="clear-modal" class="modal-overlay" style="display: none;">
         <div class="modal-box">
             <h2>⚠️ Are you sure?</h2>
             <p>Do you really want to clear all your writing?</p>
             <div class="modal-buttons">
                 <button id="confirm-clear-btn">Yes, Clear</button>
-                <button id="cancel-clear-btn">Cancel</button>
+                <button class="cancel-btn" id="cancel-clear-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEACHER MODE ADULT CHECK MODAL -->
+    <div id="teacher-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box teacher-modal-box">
+            <h2>👩‍🏫 Teacher Mode</h2>
+            <p><strong>Warning!</strong> This unlocks the keyboard.<br>Only adults should use this mode.</p>
+            <div class="modal-buttons">
+                <button id="confirm-teacher-btn">Yes, I am an adult</button>
+                <button class="cancel-btn" id="cancel-teacher-btn">Cancel</button>
             </div>
         </div>
     </div>
@@ -268,46 +361,185 @@
         let recognition;
         let isAutoListening = false;
         let isListeningActive = false;
+        
+        let isEditMode = false; // Child Edit Mode
+        let isTeacherMode = false;
+
         let restartTimer = null;
+        let audioCtx = null;
         
         let phraseQueue = [];
         let backupText = ""; 
+        let savedCaretRange = null;
+
+        const sentenceBox = document.getElementById('sentence-box');
+        const statusText = document.getElementById('status');
+        const optionsContainer = document.getElementById('options-container');
+        
+        const editToggleBtn = document.getElementById('edit-toggle-btn');
+        const teacherToggleBtn = document.getElementById('teacher-toggle-btn');
 
         if (!SpeechRecognition) {
-            document.getElementById('status').innerText = "Oops! Your browser doesn't support voice typing. Try Google Chrome!";
+            statusText.innerText = "Oops! Your browser doesn't support voice typing. Try Google Chrome!";
         } else {
             recognition = new SpeechRecognition();
-            recognition.maxAlternatives = 3; 
+            recognition.maxAlternatives = 5; 
             recognition.continuous = false; 
             recognition.interimResults = false;
             recognition.lang = 'en-GB';
 
             const listenBtn = document.getElementById('listen-btn');
             const stopBtn = document.getElementById('stop-btn');
-            const commaBtn = document.getElementById('comma-btn');
-            const periodBtn = document.getElementById('period-btn');
-            const questionBtn = document.getElementById('question-btn');
-            const exclamationBtn = document.getElementById('exclamation-btn');
-            const copyBtn = document.getElementById('copy-btn');
-            const undoBtn = document.getElementById('undo-btn');
-            const clearBtn = document.getElementById('clear-btn');
-            const restoreBtn = document.getElementById('restore-btn');
-            const readSentenceBtn = document.getElementById('read-sentence-btn');
-            const sentenceBox = document.getElementById('sentence-box');
-            const optionsContainer = document.getElementById('options-container');
-            const statusText = document.getElementById('status');
-            
-            const clearModal = document.getElementById('clear-modal');
-            const confirmClearBtn = document.getElementById('confirm-clear-btn');
-            const cancelClearBtn = document.getElementById('cancel-clear-btn');
 
-            // --- LOCAL STORAGE SYSTEM (PERSISTENCE) --- //
+            function warmUpMicrophoneHardware() {
+                try {
+                    if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+                    if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+                } catch (e) {}
+            }
+
+            // --- TEXT EXTRACTION HELPER --- //
+            // Gets clean text regardless of whether spans are active or not
+            function getCurrentText() {
+                let text = sentenceBox.textContent || "";
+                // Collapse multiple spaces into one, and fix spaces before punctuation
+                return text.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').trim();
+            }
+
             function updateSentenceText(newText) {
-                sentenceBox.textContent = newText;
+                if (isEditMode) {
+                    renderChildSpans(newText);
+                } else {
+                    sentenceBox.textContent = newText;
+                }
                 localStorage.setItem('saved_voice_writer_text', newText);
             }
 
-            // Restore automatically when page reloads or opens!
+            // --- CHILD EDIT MODE SPANS LOGIC --- //
+            function createGapSpan() {
+                const gSpan = document.createElement('span');
+                gSpan.className = 'child-gap';
+                gSpan.textContent = ' '; 
+                gSpan.onclick = () => setActiveTarget(gSpan);
+                return gSpan;
+            }
+
+            function setActiveTarget(el) {
+                document.querySelectorAll('.active-child-target').forEach(e => e.classList.remove('active-child-target'));
+                el.classList.add('active-child-target');
+            }
+
+            function renderChildSpans(text) {
+                // Clean the text string before breaking it into clickable spans
+                let cleanText = text.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').trim();
+                const words = cleanText.match(/\S+/g) || [];
+                
+                sentenceBox.innerHTML = '';
+                sentenceBox.appendChild(createGapSpan()); // Always start with a gap
+                
+                words.forEach(word => {
+                    const wSpan = document.createElement('span');
+                    wSpan.className = 'child-word';
+                    wSpan.innerText = word;
+                    wSpan.onclick = () => setActiveTarget(wSpan);
+                    sentenceBox.appendChild(wSpan);
+                    
+                    sentenceBox.appendChild(createGapSpan()); // Gap after every word
+                });
+            }
+
+            // --- MODE TOGGLES --- //
+            function updateModes() {
+                const currentExtractedText = getCurrentText();
+
+                if (isTeacherMode) {
+                    sentenceBox.innerHTML = ''; // Clear spans
+                    sentenceBox.textContent = currentExtractedText; // Put raw text back
+                    
+                    sentenceBox.contentEditable = "true";
+                    sentenceBox.className = 'teacher-edit-active';
+                    
+                    teacherToggleBtn.innerText = "👩‍🏫 Teacher Mode: ON";
+                    teacherToggleBtn.style.backgroundColor = "#9c27b0";
+                    editToggleBtn.innerText = "✏️ Edit Mode: OFF";
+                    editToggleBtn.style.backgroundColor = "#00796b";
+                    
+                    statusText.innerText = "Teacher Mode ON: Keyboard unlocked.";
+                    sentenceBox.focus();
+                } else if (isEditMode) {
+                    sentenceBox.contentEditable = "false"; // Disable typing
+                    sentenceBox.className = 'child-edit-active';
+                    
+                    renderChildSpans(currentExtractedText);
+                    
+                    editToggleBtn.innerText = "✏️ Edit Mode: ON";
+                    editToggleBtn.style.backgroundColor = "#ff9800";
+                    teacherToggleBtn.innerText = "👩‍🏫 Teacher Mode: OFF";
+                    teacherToggleBtn.style.backgroundColor = "#00796b";
+                    
+                    statusText.innerText = "Edit Mode ON: Click a gap to add, or click a word to replace.";
+                } else {
+                    sentenceBox.innerHTML = ''; 
+                    sentenceBox.textContent = currentExtractedText;
+                    
+                    sentenceBox.contentEditable = "false";
+                    sentenceBox.className = '';
+                    
+                    editToggleBtn.innerText = "✏️ Edit Mode: OFF";
+                    editToggleBtn.style.backgroundColor = "#00796b";
+                    teacherToggleBtn.innerText = "👩‍🏫 Teacher Mode: OFF";
+                    teacherToggleBtn.style.backgroundColor = "#00796b";
+                    
+                    statusText.innerText = "Voice Mode Active.";
+                    savedCaretRange = null; 
+                }
+                localStorage.setItem('saved_voice_writer_text', currentExtractedText);
+            }
+
+            // Edit Mode (Child) Toggle
+            editToggleBtn.addEventListener('click', () => {
+                isEditMode = !isEditMode;
+                isTeacherMode = false;
+                updateModes();
+            });
+
+            // Teacher Mode Toggle & Modal
+            const teacherModal = document.getElementById('teacher-modal');
+            teacherToggleBtn.addEventListener('click', () => {
+                if (isTeacherMode) {
+                    isTeacherMode = false;
+                    updateModes();
+                } else {
+                    teacherModal.style.display = 'flex';
+                }
+            });
+            document.getElementById('confirm-teacher-btn').addEventListener('click', () => {
+                teacherModal.style.display = 'none';
+                isTeacherMode = true;
+                isEditMode = false;
+                updateModes();
+            });
+            document.getElementById('cancel-teacher-btn').addEventListener('click', () => {
+                teacherModal.style.display = 'none';
+            });
+
+            // Tracking manual caret in Teacher Mode
+            function saveCaretPosition() {
+                if (isTeacherMode) {
+                    const sel = window.getSelection();
+                    if (sel.rangeCount > 0) {
+                        savedCaretRange = sel.getRangeAt(0).cloneRange();
+                    }
+                }
+            }
+            sentenceBox.addEventListener('keyup', () => {
+                if (isTeacherMode) {
+                    saveCaretPosition();
+                    localStorage.setItem('saved_voice_writer_text', getCurrentText());
+                }
+            });
+            sentenceBox.addEventListener('click', saveCaretPosition);
+
             window.addEventListener('load', () => {
                 const saved = localStorage.getItem('saved_voice_writer_text');
                 if (saved && saved.trim().length > 0) {
@@ -316,74 +548,90 @@
                 }
             });
 
-            // --- PHONETIC & SPELLING APPROXIMATION GENERATOR --- //
-            // Generates realistic alternatives for speech difficulties when browser yields < 3 guesses
+            // --- INSERTION LOGIC --- //
+            function insertTextAtCursor(textToInsert) {
+                if (isTeacherMode) {
+                    sentenceBox.focus();
+                    const sel = window.getSelection();
+                    if (savedCaretRange && sentenceBox.contains(savedCaretRange.commonAncestorContainer)) {
+                        sel.removeAllRanges();
+                        sel.addRange(savedCaretRange);
+                        const range = sel.getRangeAt(0);
+                        range.deleteContents();
+                        const textNode = document.createTextNode(textToInsert);
+                        range.insertNode(textNode);
+                        range.setStartAfter(textNode);
+                        range.setEndAfter(textNode);
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                        savedCaretRange = range.cloneRange();
+                    } else {
+                        sentenceBox.textContent += textToInsert;
+                    }
+                } 
+                else if (isEditMode) {
+                    const activeEl = document.querySelector('.active-child-target');
+                    if (activeEl) {
+                        if (activeEl.classList.contains('child-word')) {
+                            // Replace highlighted word
+                            activeEl.innerText = textToInsert.trim();
+                        } else if (activeEl.classList.contains('child-gap')) {
+                            // Insert before the gap WITH a space on both sides
+                            activeEl.insertAdjacentText('beforebegin', " " + textToInsert.trim() + " ");
+                        }
+                    } else {
+                        // Append if nothing highlighted
+                        sentenceBox.insertAdjacentText('beforeend', " " + textToInsert.trim());
+                    }
+                    // Clean and re-render the spans automatically!
+                    renderChildSpans(getCurrentText());
+                } 
+                else {
+                    // Standard Voice Mode Append
+                    let text = sentenceBox.textContent;
+                    if (text.length > 0 && !text.endsWith(' ') && textToInsert.trim().length > 0 && !/[.,!?]/.test(textToInsert)) {
+                        text += ' '; 
+                    }
+                    sentenceBox.textContent = text + textToInsert;
+                    sentenceBox.scrollTop = sentenceBox.scrollHeight;
+                }
+                
+                localStorage.setItem('saved_voice_writer_text', getCurrentText());
+            }
+
             function generateApproximations(baseWord) {
-                const phonetics = {
-                    'th': ['f', 'v', 's', 'd'],
-                    'r': ['w', 'l'],
-                    'l': ['w', 'y'],
-                    's': ['z', 'th', 'sh'],
-                    'c': ['k', 's'],
-                    'k': ['g', 'c'],
-                    'p': ['b'],
-                    't': ['d']
-                };
-
+                const shortWordDb = { 'i': ['i', 'eye', 'a'], 'a': ['a', 'uh', 'ey'], 'my': ['my', 'me', 'mai'], 'me': ['me', 'my', 'may'], 'is': ['is', 'his', 'as'], 'it': ['it', 'at', 'if'], 'the': ['the', 'they', 'a'], 'to': ['to', 'two', 'too'] };
+                if (shortWordDb[baseWord.toLowerCase()]) return shortWordDb[baseWord.toLowerCase()];
+                const phonetics = { 'th': ['f', 'v', 's'], 'r': ['w', 'l'], 'l': ['w', 'y'], 's': ['z', 'sh'], 'c': ['k', 's'], 'k': ['g', 'c'], 'p': ['b'], 't': ['d'] };
                 let choices = new Set([baseWord]);
-
-                // Try common phonetic replacements
                 for (let key in phonetics) {
                     if (baseWord.includes(key)) {
-                        phonetics[key].forEach(rep => {
-                            if (choices.size < 3) choices.add(baseWord.replace(key, rep));
-                        });
+                        phonetics[key].forEach(rep => { if (choices.size < 3) choices.add(baseWord.replace(key, rep)); });
                     }
                 }
-
-                // If still under 3, generate spelling variations
-                if (choices.size < 3 && baseWord.length > 3) {
-                    choices.add(baseWord.slice(0, -1)); // Drop last letter
-                }
-                if (choices.size < 3) {
-                    choices.add(baseWord + "e"); // Add silent e
-                }
-
-                // Fallbacks if word is very short
-                const simpleFallbacks = ['a', 'the', 'is', 'it', 'to', 'in', 'and'];
+                if (choices.size < 3 && baseWord.length > 3) choices.add(baseWord.slice(0, -1));
+                if (choices.size < 3) choices.add(baseWord + "e");
+                const simpleFallbacks = ['my', 'a', 'i', 'the', 'is', 'it', 'to'];
                 let fallbackIdx = 0;
                 while (choices.size < 3 && fallbackIdx < simpleFallbacks.length) {
-                    if (simpleFallbacks[fallbackIdx] !== baseWord) {
-                        choices.add(simpleFallbacks[fallbackIdx]);
-                    }
+                    if (simpleFallbacks[fallbackIdx] !== baseWord) choices.add(simpleFallbacks[fallbackIdx]);
                     fallbackIdx++;
                 }
-
                 return Array.from(choices).slice(0, 3);
             }
 
             function safeStartListen() {
                 if (!isAutoListening) return;
                 clearTimeout(restartTimer);
-
-                if (phraseQueue.length > 0) {
-                    processNextWordInQueue();
-                    return;
-                }
-
+                warmUpMicrophoneHardware();
+                if (phraseQueue.length > 0) { processNextWordInQueue(); return; }
                 if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
                     statusText.innerText = "Waiting for audio to finish...";
-                    restartTimer = setTimeout(safeStartListen, 300);
+                    restartTimer = setTimeout(safeStartListen, 350);
                     return;
                 }
-
                 if (isListeningActive) return;
-
-                try {
-                    recognition.start();
-                } catch (e) {
-                    restartTimer = setTimeout(safeStartListen, 300);
-                }
+                try { recognition.start(); } catch (e) { restartTimer = setTimeout(safeStartListen, 350); }
             }
 
             function stopAllListening() {
@@ -391,12 +639,8 @@
                 isListeningActive = false;
                 phraseQueue = [];
                 clearTimeout(restartTimer);
-                if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel();
-                }
-                try {
-                    recognition.stop();
-                } catch (e) {}
+                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                try { recognition.stop(); } catch (e) {}
                 stopListeningUI();
             }
 
@@ -412,28 +656,14 @@
                 listenBtn.innerText = "🔴 Listening Active";
             }
 
-            function addPunctuation(mark) {
-                let text = sentenceBox.textContent;
-                if (text.endsWith(' ')) {
-                    text = text.slice(0, -1);
-                }
-                updateSentenceText(text + mark + ' ');
-                sentenceBox.scrollTop = sentenceBox.scrollHeight;
-            }
-
             function speakText(text, callback) {
                 if ('speechSynthesis' in window) {
                     window.speechSynthesis.cancel();
                     const utterance = new SpeechSynthesisUtterance(text);
                     utterance.rate = 0.85; 
-                    if (callback) {
-                        utterance.onend = callback;
-                        utterance.onerror = callback;
-                    }
+                    if (callback) { utterance.onend = callback; utterance.onerror = callback; }
                     window.speechSynthesis.speak(utterance);
-                } else if (callback) {
-                    callback();
-                }
+                } else if (callback) { callback(); }
             }
 
             function processNextWordInQueue() {
@@ -454,34 +684,30 @@
                     btn.className = 'option-btn';
                     btn.innerText = word;
                     
-                    btn.onmouseenter = () => {
-                        if (!isListeningActive) speakText(word);
-                    };
+                    btn.onmouseenter = () => { if (!isListeningActive) speakText(word); };
 
                     btn.onclick = () => {
                         let formattedWord = word;
-                        const currentText = sentenceBox.textContent;
-                        if (currentText.length === 0 || /[.!?]\s*$/.test(currentText)) {
+                        const currentText = getCurrentText();
+                        
+                        if (!isEditMode && !isTeacherMode && (currentText.length === 0 || /[.!?]\s*$/.test(currentText))) {
                             formattedWord = formattedWord.charAt(0).toUpperCase() + formattedWord.slice(1);
                         }
                         
-                        updateSentenceText(sentenceBox.textContent + formattedWord + ' ');
-                        sentenceBox.scrollTop = sentenceBox.scrollHeight;
+                        insertTextAtCursor(formattedWord);
                         optionsContainer.innerHTML = '';
-                        
                         setTimeout(processNextWordInQueue, 250);
                     };
-
                     optionsContainer.appendChild(btn);
                 });
             }
 
             // --- BUTTON HANDLERS --- //
-
             listenBtn.addEventListener('click', () => {
                 optionsContainer.innerHTML = '';
                 phraseQueue = [];
                 isAutoListening = true;
+                warmUpMicrophoneHardware();
                 safeStartListen();
             });
 
@@ -491,28 +717,24 @@
                 optionsContainer.innerHTML = '';
             });
 
-            commaBtn.addEventListener('click', () => {
-                addPunctuation(',');
-                if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300);
-            });
+            document.getElementById('comma-btn').addEventListener('click', () => { insertTextAtCursor(','); if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300); });
+            document.getElementById('period-btn').addEventListener('click', () => { insertTextAtCursor('.'); if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300); });
+            document.getElementById('question-btn').addEventListener('click', () => { insertTextAtCursor('?'); if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300); });
+            document.getElementById('exclamation-btn').addEventListener('click', () => { insertTextAtCursor('!'); if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300); });
 
-            periodBtn.addEventListener('click', () => {
-                addPunctuation('.');
-                if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300);
-            });
-
-            questionBtn.addEventListener('click', () => {
-                addPunctuation('?');
-                if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300);
-            });
-
-            exclamationBtn.addEventListener('click', () => {
-                addPunctuation('!');
-                if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300);
-            });
-
-            undoBtn.addEventListener('click', () => {
-                let text = sentenceBox.textContent.trimEnd();
+            document.getElementById('undo-btn').addEventListener('click', () => {
+                if (isEditMode) {
+                    const activeEl = document.querySelector('.active-child-target');
+                    if (activeEl && activeEl.classList.contains('child-word')) {
+                        activeEl.remove(); // Child can click a word and delete it instantly!
+                        renderChildSpans(getCurrentText());
+                        statusText.innerText = "Word deleted.";
+                        return;
+                    }
+                }
+                
+                // Default delete last word
+                let text = getCurrentText();
                 if (text) {
                     let words = text.split(/\s+/);
                     words.pop();
@@ -521,37 +743,37 @@
                 }
             });
 
-            copyBtn.addEventListener('click', () => {
-                const text = sentenceBox.textContent.trim();
+            document.getElementById('copy-btn').addEventListener('click', () => {
+                const text = getCurrentText();
                 if (text) {
                     navigator.clipboard.writeText(text).then(() => {
-                        const originalText = copyBtn.innerText;
-                        copyBtn.innerText = "✅ Copied!";
-                        setTimeout(() => copyBtn.innerText = originalText, 2500);
+                        const originalText = document.getElementById('copy-btn').innerText;
+                        document.getElementById('copy-btn').innerText = "✅ Copied!";
+                        setTimeout(() => document.getElementById('copy-btn').innerText = originalText, 2500);
                     });
                 }
             });
 
-            clearBtn.addEventListener('click', () => {
-                if (sentenceBox.textContent.trim().length > 0) {
-                    clearModal.style.display = 'flex';
-                }
+            document.getElementById('print-btn').addEventListener('click', () => {
+                if (getCurrentText()) { window.print(); } else { statusText.innerText = "Nothing to print yet!"; }
             });
 
-            confirmClearBtn.addEventListener('click', () => {
-                backupText = sentenceBox.textContent;
+            const clearModal = document.getElementById('clear-modal');
+            const restoreBtn = document.getElementById('restore-btn');
+            document.getElementById('clear-btn').addEventListener('click', () => {
+                if (getCurrentText().length > 0) clearModal.style.display = 'flex';
+            });
+            document.getElementById('confirm-clear-btn').addEventListener('click', () => {
+                backupText = getCurrentText();
                 updateSentenceText('');
                 optionsContainer.innerHTML = '';
+                savedCaretRange = null;
                 stopAllListening();
                 clearModal.style.display = 'none';
                 restoreBtn.style.display = 'inline-block';
                 statusText.innerText = "Cleared. Use 'Restore' if this was a mistake.";
             });
-
-            cancelClearBtn.addEventListener('click', () => {
-                clearModal.style.display = 'none';
-            });
-
+            document.getElementById('cancel-clear-btn').addEventListener('click', () => { clearModal.style.display = 'none'; });
             restoreBtn.addEventListener('click', () => {
                 if (backupText) {
                     updateSentenceText(backupText);
@@ -560,56 +782,41 @@
                 }
             });
 
-            readSentenceBtn.addEventListener('click', () => {
-                const text = sentenceBox.textContent.trim();
+            document.getElementById('read-sentence-btn').addEventListener('click', () => {
+                const text = getCurrentText();
                 if (text) {
                     const wasAuto = isAutoListening;
                     isAutoListening = false;
                     try { recognition.stop(); } catch(e){}
-                    
-                    speakText(text, () => {
-                        if (wasAuto) {
-                            isAutoListening = true;
-                            safeStartListen();
-                        }
-                    });
+                    speakText(text, () => { if (wasAuto) { isAutoListening = true; safeStartListen(); } });
                 }
             });
 
             // --- RECOGNITION EVENTS --- //
-
             recognition.onstart = () => {
                 isListeningActive = true;
                 updateListeningUI();
-                statusText.innerText = "🔴 Listening... Speak now! 👂";
+                setTimeout(() => { if (isListeningActive) statusText.innerText = "🔴 Listening... Speak now! 👂"; }, 150);
             };
 
             recognition.onresult = (event) => {
                 const results = event.results[0];
                 optionsContainer.innerHTML = ''; 
                 phraseQueue = [];
-
                 let wordsByPosition = [];
 
                 for (let i = 0; i < results.length; i++) {
-                    let transcript = results[i].transcript.trim().toLowerCase();
-                    transcript = transcript.replace(/[.,!?]/g, ''); 
+                    let transcript = results[i].transcript.trim().toLowerCase().replace(/[.,!?]/g, '');
                     let words = transcript.split(/\s+/).filter(w => w.length > 0);
-
                     words.forEach((w, pos) => {
-                        if (!wordsByPosition[pos]) {
-                            wordsByPosition[pos] = new Set();
-                        }
+                        if (!wordsByPosition[pos]) wordsByPosition[pos] = new Set();
                         wordsByPosition[pos].add(w);
                     });
                 }
 
-                // Ensure EVERY word position has exactly 3 options (using approximation generator if needed)
                 phraseQueue = wordsByPosition.map(set => {
                     let choices = Array.from(set);
-                    if (choices.length < 3) {
-                        choices = generateApproximations(choices[0]);
-                    }
+                    if (choices.length < 3) choices = generateApproximations(choices[0]);
                     return choices.slice(0, 3);
                 }).filter(arr => arr.length > 0);
 
@@ -617,9 +824,7 @@
                     processNextWordInQueue();
                 } else {
                     statusText.innerText = "Didn't catch that. Trying again...";
-                    if (isAutoListening) {
-                        restartTimer = setTimeout(safeStartListen, 600);
-                    }
+                    if (isAutoListening) restartTimer = setTimeout(safeStartListen, 500);
                 }
             };
 
@@ -627,16 +832,10 @@
                 isListeningActive = false;
                 if (event.error === 'no-speech') {
                     statusText.innerText = "No speech detected. Listening again...";
-                    if (isAutoListening) {
-                        restartTimer = setTimeout(safeStartListen, 400);
-                    }
-                } else if (event.error === 'aborted') {
-                    // Intentionally stopped
-                } else {
+                    if (isAutoListening) restartTimer = setTimeout(safeStartListen, 400);
+                } else if (event.error !== 'aborted') {
                     statusText.innerText = "Mic status: " + event.error;
-                    if (isAutoListening) {
-                        restartTimer = setTimeout(safeStartListen, 800);
-                    }
+                    if (isAutoListening) restartTimer = setTimeout(safeStartListen, 800);
                 }
             };
 
