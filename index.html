@@ -37,6 +37,7 @@
             max-width: 1200px;
             margin: 0 auto;
             width: 100%;
+            position: relative;
         }
 
         /* Left Column: Scrollable Text Box */
@@ -112,6 +113,7 @@
         .action-btn { background-color: #0277bd; color: #ffffff; box-shadow: 0 4px #01579b; }
         #undo-btn { background-color: #e65100; color: #ffffff; box-shadow: 0 4px #bf360c; font-weight: bold; }
         #clear-btn { background-color: #d32f2f; color: #ffffff; box-shadow: 0 4px #b71c1c; }
+        #restore-btn { background-color: #00897b; color: #ffffff; box-shadow: 0 4px #004d40; font-weight: bold; display: none; }
         #read-sentence-btn { background-color: #6a1b9a; color: #ffffff; box-shadow: 0 4px #4a148c; }
         
         #options-container {
@@ -140,6 +142,63 @@
             font-weight: bold;
             min-height: 28px;
             margin: 5px 0;
+        }
+
+        /* Confirmation Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-box {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            border: 4px solid #d32f2f;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            text-align: center;
+            animation: popIn 0.2s ease-out;
+        }
+
+        .modal-box h2 {
+            margin-top: 0;
+            color: #d32f2f;
+            font-size: 28px;
+        }
+
+        .modal-box p {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 25px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        #confirm-clear-btn {
+            background-color: #d32f2f;
+            color: white;
+            box-shadow: 0 4px #b71c1c;
+            font-weight: bold;
+        }
+
+        #cancel-clear-btn {
+            background-color: #757575;
+            color: white;
+            box-shadow: 0 4px #424242;
         }
 
         @keyframes popIn {
@@ -195,12 +254,25 @@
                 <button id="undo-btn">⌫ Delete Word</button>
                 <button id="copy-btn" class="action-btn">📋 Copy to Docs</button>
                 <button id="clear-btn">🗑️ Clear</button>
+                <button id="restore-btn">↩️ Restore Text</button>
             </div>
 
             <div id="status">Click "Start Listening" when ready!</div>
             
             <!-- Word Choices Output -->
             <div id="options-container"></div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal Dialog -->
+    <div id="clear-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <h2>⚠️ Are you sure?</h2>
+            <p>Do you really want to clear all your writing?</p>
+            <div class="modal-buttons">
+                <button id="confirm-clear-btn">Yes, Clear</button>
+                <button id="cancel-clear-btn">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -212,6 +284,7 @@
         let restartTimer = null;
         
         let phraseQueue = [];
+        let backupText = ""; // Holds restored text safety net
 
         if (!SpeechRecognition) {
             document.getElementById('status').innerText = "Oops! Your browser doesn't support voice typing. Try Google Chrome!";
@@ -231,10 +304,15 @@
             const copyBtn = document.getElementById('copy-btn');
             const undoBtn = document.getElementById('undo-btn');
             const clearBtn = document.getElementById('clear-btn');
+            const restoreBtn = document.getElementById('restore-btn');
             const readSentenceBtn = document.getElementById('read-sentence-btn');
             const sentenceBox = document.getElementById('sentence-box');
             const optionsContainer = document.getElementById('options-container');
             const statusText = document.getElementById('status');
+            
+            const clearModal = document.getElementById('clear-modal');
+            const confirmClearBtn = document.getElementById('confirm-clear-btn');
+            const cancelClearBtn = document.getElementById('cancel-clear-btn');
 
             function safeStartListen() {
                 if (!isAutoListening) return;
@@ -388,7 +466,6 @@
             undoBtn.addEventListener('click', () => {
                 let text = sentenceBox.textContent.trimEnd();
                 if (text) {
-                    // Split text into words and remove the last item
                     let words = text.split(/\s+/);
                     words.pop();
                     sentenceBox.textContent = words.length > 0 ? words.join(' ') + ' ' : '';
@@ -407,11 +484,36 @@
                 }
             });
 
+            // Open Confirmation Modal
             clearBtn.addEventListener('click', () => {
+                if (sentenceBox.textContent.trim().length > 0) {
+                    clearModal.style.display = 'flex';
+                }
+            });
+
+            // Confirm Clear Execution
+            confirmClearBtn.addEventListener('click', () => {
+                backupText = sentenceBox.textContent; // Save safety net backup
                 sentenceBox.textContent = '';
                 optionsContainer.innerHTML = '';
                 stopAllListening();
-                statusText.innerText = "Cleared. Click Start Listening when ready.";
+                clearModal.style.display = 'none';
+                restoreBtn.style.display = 'inline-block'; // Show restore button
+                statusText.innerText = "Cleared. Use 'Restore Text' if this was a mistake.";
+            });
+
+            // Cancel Clear Execution
+            cancelClearBtn.addEventListener('click', () => {
+                clearModal.style.display = 'none';
+            });
+
+            // Restore Backed-Up Text
+            restoreBtn.addEventListener('click', () => {
+                if (backupText) {
+                    sentenceBox.textContent = backupText;
+                    restoreBtn.style.display = 'none'; // Hide after restoring
+                    statusText.innerText = "Text restored!";
+                }
             });
 
             readSentenceBtn.addEventListener('click', () => {
