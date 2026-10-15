@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Voice Choice Writer</title>
     <style>
-        /* Force the app to fit the screen exactly without scrolling */
         * { box-sizing: border-box; }
         
         body {
@@ -15,16 +14,16 @@
             padding: 10px 20px;
             margin: 0;
             color: #333;
-            height: 100vh; /* 100% of Viewport Height */
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Prevent full page scrolling */
+            overflow: hidden;
         }
         
         h1 { 
             color: #00796b; 
-            margin: 10px 0;
-            font-size: clamp(24px, 4vw, 32px); /* Scales font size down on smaller screens */
+            margin: 8px 0;
+            font-size: clamp(22px, 3.5vw, 30px);
         }
         
         .controls-group {
@@ -35,22 +34,21 @@
             margin: 5px 0;
         }
 
-        /* The Sentence Box now expands to fill the middle space */
         #sentence-box {
             background: white;
             border: 4px dashed #00bcd4;
             border-radius: 15px;
-            flex-grow: 1; /* Pushes everything else to top and bottom */
+            flex-grow: 1;
             padding: 20px;
             font-size: clamp(24px, 4vw, 36px);
-            margin: 10px auto;
+            margin: 8px auto;
             width: 100%;
             max-width: 900px;
             text-align: left;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             line-height: 1.5;
-            overflow-y: auto; /* If sentence gets HUGE, only this box scrolls */
-            white-space: pre-wrap; /* Forces spaces to be respected */
+            overflow-y: auto;
+            white-space: pre-wrap;
         }
 
         button {
@@ -72,6 +70,9 @@
         #listen-btn { background-color: #4CAF50; color: white; box-shadow: 0 4px #388E3C; font-weight: bold; }
         #listen-btn:active { box-shadow: 0 0px #388E3C; }
         
+        #stop-btn { background-color: #e91e63; color: white; box-shadow: 0 4px #c2185b; font-weight: bold; }
+        #stop-btn:active { box-shadow: 0 0px #c2185b; }
+        
         .punct-btn { background-color: #FF9800; color: white; box-shadow: 0 4px #F57C00; }
         .punct-btn:active { box-shadow: 0 0px #F57C00; }
         
@@ -89,21 +90,21 @@
             justify-content: center;
             align-items: center;
             gap: 15px;
-            min-height: 100px;
-            margin: 10px 0;
-            flex-wrap: nowrap; /* Keep on one line to fit screen */
+            min-height: 90px;
+            margin: 8px 0;
+            flex-wrap: nowrap;
         }
 
         .option-btn {
             background-color: #9c27b0;
             color: white;
             box-shadow: 0 4px #7b1fa2;
-            font-size: clamp(20px, 4vw, 32px); /* Scales dynamically */
-            padding: 15px 30px;
-            flex: 1; /* Stretches buttons evenly */
-            max-width: 30%;
+            font-size: clamp(20px, 4vw, 32px);
+            padding: 15px 25px;
+            flex: 1;
+            max-width: 32%;
             animation: popIn 0.3s ease-out;
-            word-wrap: break-word; /* Prevents long words breaking layout */
+            word-wrap: break-word;
         }
         .option-btn:active { box-shadow: 0 0px #7b1fa2; }
 
@@ -111,7 +112,7 @@
             font-size: clamp(16px, 2.5vw, 20px);
             color: #555;
             font-weight: bold;
-            min-height: 30px;
+            min-height: 28px;
         }
 
         @keyframes popIn {
@@ -127,6 +128,7 @@
     <!-- Top Controls -->
     <div class="controls-group">
         <button id="listen-btn">🎤 Start Listening</button>
+        <button id="stop-btn">🛑 Stop Listening</button>
         <button id="comma-btn" class="punct-btn">, Comma</button>
         <button id="period-btn" class="punct-btn">. Full Stop</button>
     </div>
@@ -141,7 +143,7 @@
         <button id="clear-btn">🗑️ Clear</button>
     </div>
 
-    <div id="status">Click "Start Listening" to begin!</div>
+    <div id="status">Click "Start Listening" when ready!</div>
     
     <!-- Choices appear here -->
     <div id="options-container"></div>
@@ -150,6 +152,8 @@
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
         let isAutoListening = false;
+        let isListeningActive = false;
+        let restartTimer = null;
         
         if (!SpeechRecognition) {
             document.getElementById('status').innerText = "Oops! Your browser doesn't support voice typing. Try Google Chrome!";
@@ -161,6 +165,7 @@
             recognition.lang = 'en-GB';
 
             const listenBtn = document.getElementById('listen-btn');
+            const stopBtn = document.getElementById('stop-btn');
             const commaBtn = document.getElementById('comma-btn');
             const periodBtn = document.getElementById('period-btn');
             const copyBtn = document.getElementById('copy-btn');
@@ -170,18 +175,24 @@
             const optionsContainer = document.getElementById('options-container');
             const statusText = document.getElementById('status');
 
-            // --- FUNCTIONS --- //
-
             function triggerListen() {
+                if (isListeningActive) return;
+                clearTimeout(restartTimer);
                 try {
                     recognition.start();
-                    statusText.innerText = "Listening... speak your word! 👂";
-                    listenBtn.style.backgroundColor = "#FFEB3B"; 
-                    listenBtn.style.color = "#333";
-                    listenBtn.innerText = "Listening...";
                 } catch (e) {
-                    // Ignore if already started
+                    restartTimer = setTimeout(triggerListen, 200);
                 }
+            }
+
+            function stopAllListening() {
+                isAutoListening = false;
+                isListeningActive = false;
+                clearTimeout(restartTimer);
+                try {
+                    recognition.stop();
+                } catch (e) {}
+                stopListeningUI();
             }
 
             function stopListeningUI() {
@@ -190,8 +201,13 @@
                 listenBtn.innerText = "🎤 Start Listening";
             }
 
+            function updateListeningUI() {
+                listenBtn.style.backgroundColor = "#FFEB3B"; 
+                listenBtn.style.color = "#333";
+                listenBtn.innerText = "🔴 Listening Active";
+            }
+
             function addPunctuation(mark) {
-                // Using textContent and forcing a space prevents the missing space bug
                 let text = sentenceBox.textContent;
                 if (text.endsWith(' ')) {
                     text = text.slice(0, -1);
@@ -208,7 +224,7 @@
                 }
             }
 
-            // --- BUTTON CLICKS --- //
+            // --- LISTEN / STOP BUTTON CLICKS --- //
 
             listenBtn.addEventListener('click', () => {
                 optionsContainer.innerHTML = '';
@@ -216,17 +232,24 @@
                 triggerListen();
             });
 
+            stopBtn.addEventListener('click', () => {
+                stopAllListening();
+                statusText.innerText = "Listening stopped. Click Start when ready.";
+                optionsContainer.innerHTML = '';
+            });
+
             commaBtn.addEventListener('click', () => {
                 addPunctuation(',');
-                if (isAutoListening) triggerListen(); 
+                if (isAutoListening) {
+                    restartTimer = setTimeout(triggerListen, 250);
+                }
             });
 
             periodBtn.addEventListener('click', () => {
                 addPunctuation('.');
-                isAutoListening = false; 
+                stopAllListening();
                 statusText.innerText = "Sentence complete! Ready for a new one.";
                 optionsContainer.innerHTML = '';
-                stopListeningUI();
             });
 
             copyBtn.addEventListener('click', () => {
@@ -243,25 +266,29 @@
             clearBtn.addEventListener('click', () => {
                 sentenceBox.textContent = '';
                 optionsContainer.innerHTML = '';
-                isAutoListening = false;
-                statusText.innerText = "Cleared. Click start when ready.";
-                stopListeningUI();
+                stopAllListening();
+                statusText.innerText = "Cleared. Click Start Listening when ready.";
             });
 
             readSentenceBtn.addEventListener('click', () => {
                 const text = sentenceBox.textContent.trim();
                 if (text) {
-                    speakWord(text); // Reusing the speech function for the whole sentence
+                    speakWord(text);
                 }
             });
 
-            // --- SPEECH RECOGNITION LOGIC --- //
+            // --- SPEECH RECOGNITION LIFECYCLE --- //
+
+            recognition.onstart = () => {
+                isListeningActive = true;
+                updateListeningUI();
+                statusText.innerText = "🔴 Listening... Speak your word now! 👂";
+            };
 
             recognition.onresult = (event) => {
                 const results = event.results[0];
                 optionsContainer.innerHTML = ''; 
                 statusText.innerText = "Pick the right word! (Hover to hear) 👇";
-                stopListeningUI();
 
                 let uniqueWords = new Set();
                 
@@ -283,15 +310,12 @@
                                 word = word.charAt(0).toUpperCase() + word.slice(1);
                             }
                             
-                            // Using textContent to preserve the trailing spaces
                             sentenceBox.textContent += word + ' ';
                             optionsContainer.innerHTML = '';
                             
                             if (isAutoListening) {
-                                statusText.innerText = "Great! Getting ready for next word...";
-                                setTimeout(() => {
-                                    if (isAutoListening) triggerListen();
-                                }, 800);
+                                statusText.innerText = "Word added! Mic starting again...";
+                                restartTimer = setTimeout(triggerListen, 250);
                             } else {
                                 statusText.innerText = "Word added.";
                             }
@@ -303,27 +327,31 @@
                 }
 
                 if (uniqueWords.size === 0) {
-                    statusText.innerText = "Didn't catch that. Try again!";
+                    statusText.innerText = "Didn't catch that. Trying again...";
                     if (isAutoListening) {
-                        setTimeout(triggerListen, 1500);
+                        restartTimer = setTimeout(triggerListen, 500);
                     }
                 }
             };
 
             recognition.onerror = (event) => {
+                isListeningActive = false;
                 if (event.error === 'no-speech') {
-                    statusText.innerText = "Didn't hear anything. Taking a break.";
-                    isAutoListening = false;
-                    stopListeningUI();
+                    statusText.innerText = "No speech heard. Retrying mic...";
+                    if (isAutoListening) {
+                        restartTimer = setTimeout(triggerListen, 400);
+                    }
+                } else if (event.error === 'aborted') {
+                    // Handled intentional stop
                 } else {
-                    statusText.innerText = "Error: " + event.error;
-                    isAutoListening = false;
+                    statusText.innerText = "Mic note: " + event.error;
                     stopListeningUI();
                 }
             };
 
             recognition.onend = () => {
-                if (optionsContainer.innerHTML === '' && !isAutoListening) {
+                isListeningActive = false;
+                if (!isAutoListening) {
                     stopListeningUI();
                 }
             };
