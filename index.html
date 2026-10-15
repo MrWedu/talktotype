@@ -11,7 +11,7 @@
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
             background-color: #e0f7fa;
             text-align: center;
-            padding: 15px;
+            padding: 12px;
             margin: 0;
             color: #222;
             height: 100vh;
@@ -22,8 +22,8 @@
         
         h1 { 
             color: #00796b; 
-            margin: 0 0 10px 0;
-            font-size: clamp(22px, 3.5vw, 30px);
+            margin: 0 0 8px 0;
+            font-size: clamp(20px, 3vw, 26px);
             flex-shrink: 0;
         }
 
@@ -31,9 +31,9 @@
         .app-container {
             display: flex;
             flex-direction: row;
-            gap: 20px;
+            gap: 15px;
             flex-grow: 1;
-            height: calc(100% - 50px);
+            height: calc(100% - 40px);
             max-width: 1200px;
             margin: 0 auto;
             width: 100%;
@@ -53,8 +53,8 @@
             border: 4px dashed #00bcd4;
             border-radius: 15px;
             height: 100%;
-            padding: 20px;
-            font-size: clamp(22px, 3.5vw, 32px);
+            padding: 18px;
+            font-size: clamp(22px, 3.2vw, 30px);
             text-align: left;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             line-height: 1.5;
@@ -68,83 +68,88 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 8px;
             height: 100%;
             justify-content: flex-start;
         }
 
+        /* Compact single row control groups */
         .controls-group {
             display: flex;
             justify-content: center;
-            flex-wrap: wrap;
-            gap: 8px;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 6px;
+            width: 100%;
         }
 
         button {
             font-family: inherit;
-            font-size: clamp(16px, 2vw, 20px);
-            padding: 10px 16px;
-            border-radius: 12px;
+            font-size: clamp(14px, 1.6vw, 17px);
+            padding: 8px 12px;
+            border-radius: 10px;
             border: none;
             cursor: pointer;
             transition: transform 0.1s, box-shadow 0.1s;
-            box-shadow: 0 4px #777;
+            box-shadow: 0 3px #777;
+            white-space: nowrap;
         }
         
         button:active {
-            transform: translateY(4px);
+            transform: translateY(3px);
             box-shadow: 0 0px #777;
         }
 
-        #listen-btn { background-color: #2e7d32; color: #ffffff; box-shadow: 0 4px #1b5e20; font-weight: bold; }
-        #stop-btn { background-color: #c2185b; color: #ffffff; box-shadow: 0 4px #880e4f; font-weight: bold; }
+        #listen-btn { background-color: #2e7d32; color: #ffffff; box-shadow: 0 3px #1b5e20; font-weight: bold; flex: 1; }
+        #stop-btn { background-color: #c2185b; color: #ffffff; box-shadow: 0 3px #880e4f; font-weight: bold; flex: 1; }
         
         /* High-Contrast Dyslexia-Friendly Punctuation Styling */
         .punct-btn { 
             background-color: #1a237e; 
             color: #ffffff; 
-            box-shadow: 0 4px #0d47a1; 
-            font-size: 26px;
+            box-shadow: 0 3px #0d47a1; 
+            font-size: 22px;
             font-weight: 900;
-            min-width: 52px;
+            padding: 6px 16px;
+            flex: 1;
             border: 2px solid #000000;
         }
         
-        .action-btn { background-color: #0277bd; color: #ffffff; box-shadow: 0 4px #01579b; }
-        #undo-btn { background-color: #e65100; color: #ffffff; box-shadow: 0 4px #bf360c; font-weight: bold; }
-        #clear-btn { background-color: #d32f2f; color: #ffffff; box-shadow: 0 4px #b71c1c; }
-        #restore-btn { background-color: #00897b; color: #ffffff; box-shadow: 0 4px #004d40; font-weight: bold; display: none; }
-        #read-sentence-btn { background-color: #6a1b9a; color: #ffffff; box-shadow: 0 4px #4a148c; }
+        .action-btn { background-color: #0277bd; color: #ffffff; box-shadow: 0 3px #01579b; }
+        #undo-btn { background-color: #e65100; color: #ffffff; box-shadow: 0 3px #bf360c; font-weight: bold; }
+        #clear-btn { background-color: #d32f2f; color: #ffffff; box-shadow: 0 3px #b71c1c; }
+        #restore-btn { background-color: #00897b; color: #ffffff; box-shadow: 0 3px #004d40; font-weight: bold; display: none; }
+        #read-sentence-btn { background-color: #6a1b9a; color: #ffffff; box-shadow: 0 3px #4a148c; }
         
         #options-container {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            margin-top: 10px;
+            gap: 8px;
+            margin-top: 4px;
             flex-grow: 1;
-            justify-content: center;
+            justify-content: space-evenly;
         }
 
         .option-btn {
             background-color: #6a1b9a;
             color: #ffffff;
             box-shadow: 0 4px #4a148c;
-            font-size: clamp(22px, 3.5vw, 32px);
-            padding: 15px;
+            font-size: clamp(22px, 3.2vw, 30px);
+            padding: 12px;
             width: 100%;
             animation: popIn 0.3s ease-out;
             word-wrap: break-word;
         }
 
         #status {
-            font-size: clamp(16px, 2vw, 19px);
+            font-size: clamp(14px, 1.8vw, 17px);
             color: #222222;
             font-weight: bold;
-            min-height: 28px;
-            margin: 5px 0;
+            min-height: 24px;
+            margin: 2px 0;
         }
 
-        /* Confirmation Modal Overlay */
+        /* Modal Overlay */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -160,10 +165,10 @@
 
         .modal-box {
             background: white;
-            padding: 30px;
+            padding: 25px;
             border-radius: 20px;
             border: 4px solid #d32f2f;
-            max-width: 450px;
+            max-width: 420px;
             width: 90%;
             box-shadow: 0 8px 16px rgba(0,0,0,0.2);
             text-align: center;
@@ -173,33 +178,23 @@
         .modal-box h2 {
             margin-top: 0;
             color: #d32f2f;
-            font-size: 28px;
+            font-size: 26px;
         }
 
         .modal-box p {
-            font-size: 20px;
+            font-size: 18px;
             color: #333;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
         .modal-buttons {
             display: flex;
             justify-content: center;
-            gap: 15px;
+            gap: 12px;
         }
 
-        #confirm-clear-btn {
-            background-color: #d32f2f;
-            color: white;
-            box-shadow: 0 4px #b71c1c;
-            font-weight: bold;
-        }
-
-        #cancel-clear-btn {
-            background-color: #757575;
-            color: white;
-            box-shadow: 0 4px #424242;
-        }
+        #confirm-clear-btn { background-color: #d32f2f; color: white; box-shadow: 0 3px #b71c1c; font-weight: bold; }
+        #cancel-clear-btn { background-color: #757575; color: white; box-shadow: 0 3px #424242; }
 
         @keyframes popIn {
             0% { transform: scale(0.8); opacity: 0; }
@@ -207,18 +202,10 @@
         }
 
         @media (max-width: 650px) {
-            .app-container {
-                flex-direction: column;
-            }
-            .left-panel {
-                height: 40%;
-            }
-            #options-container {
-                flex-direction: row;
-            }
-            .option-btn {
-                flex: 1;
-            }
+            .app-container { flex-direction: column; }
+            .left-panel { height: 40%; }
+            #options-container { flex-direction: row; }
+            .option-btn { flex: 1; }
         }
     </style>
 </head>
@@ -248,13 +235,13 @@
                 <button id="exclamation-btn" class="punct-btn">!</button>
             </div>
 
-            <!-- Action Controls -->
+            <!-- Action Controls Compact Row -->
             <div class="controls-group">
-                <button id="read-sentence-btn">🔊 Read Sentence</button>
-                <button id="undo-btn">⌫ Delete Word</button>
-                <button id="copy-btn" class="action-btn">📋 Copy to Docs</button>
+                <button id="read-sentence-btn">🔊 Read</button>
+                <button id="undo-btn">⌫ Delete</button>
+                <button id="copy-btn" class="action-btn">📋 Copy</button>
                 <button id="clear-btn">🗑️ Clear</button>
-                <button id="restore-btn">↩️ Restore Text</button>
+                <button id="restore-btn">↩️ Restore</button>
             </div>
 
             <div id="status">Click "Start Listening" when ready!</div>
@@ -284,7 +271,7 @@
         let restartTimer = null;
         
         let phraseQueue = [];
-        let backupText = ""; // Holds restored text safety net
+        let backupText = ""; 
 
         if (!SpeechRecognition) {
             document.getElementById('status').innerText = "Oops! Your browser doesn't support voice typing. Try Google Chrome!";
@@ -313,6 +300,67 @@
             const clearModal = document.getElementById('clear-modal');
             const confirmClearBtn = document.getElementById('confirm-clear-btn');
             const cancelClearBtn = document.getElementById('cancel-clear-btn');
+
+            // --- LOCAL STORAGE SYSTEM (PERSISTENCE) --- //
+            function updateSentenceText(newText) {
+                sentenceBox.textContent = newText;
+                localStorage.setItem('saved_voice_writer_text', newText);
+            }
+
+            // Restore automatically when page reloads or opens!
+            window.addEventListener('load', () => {
+                const saved = localStorage.getItem('saved_voice_writer_text');
+                if (saved && saved.trim().length > 0) {
+                    sentenceBox.textContent = saved;
+                    statusText.innerText = "Restored your previous work!";
+                }
+            });
+
+            // --- PHONETIC & SPELLING APPROXIMATION GENERATOR --- //
+            // Generates realistic alternatives for speech difficulties when browser yields < 3 guesses
+            function generateApproximations(baseWord) {
+                const phonetics = {
+                    'th': ['f', 'v', 's', 'd'],
+                    'r': ['w', 'l'],
+                    'l': ['w', 'y'],
+                    's': ['z', 'th', 'sh'],
+                    'c': ['k', 's'],
+                    'k': ['g', 'c'],
+                    'p': ['b'],
+                    't': ['d']
+                };
+
+                let choices = new Set([baseWord]);
+
+                // Try common phonetic replacements
+                for (let key in phonetics) {
+                    if (baseWord.includes(key)) {
+                        phonetics[key].forEach(rep => {
+                            if (choices.size < 3) choices.add(baseWord.replace(key, rep));
+                        });
+                    }
+                }
+
+                // If still under 3, generate spelling variations
+                if (choices.size < 3 && baseWord.length > 3) {
+                    choices.add(baseWord.slice(0, -1)); // Drop last letter
+                }
+                if (choices.size < 3) {
+                    choices.add(baseWord + "e"); // Add silent e
+                }
+
+                // Fallbacks if word is very short
+                const simpleFallbacks = ['a', 'the', 'is', 'it', 'to', 'in', 'and'];
+                let fallbackIdx = 0;
+                while (choices.size < 3 && fallbackIdx < simpleFallbacks.length) {
+                    if (simpleFallbacks[fallbackIdx] !== baseWord) {
+                        choices.add(simpleFallbacks[fallbackIdx]);
+                    }
+                    fallbackIdx++;
+                }
+
+                return Array.from(choices).slice(0, 3);
+            }
 
             function safeStartListen() {
                 if (!isAutoListening) return;
@@ -369,7 +417,7 @@
                 if (text.endsWith(' ')) {
                     text = text.slice(0, -1);
                 }
-                sentenceBox.textContent = text + mark + ' ';
+                updateSentenceText(text + mark + ' ');
                 sentenceBox.scrollTop = sentenceBox.scrollHeight;
             }
 
@@ -417,7 +465,7 @@
                             formattedWord = formattedWord.charAt(0).toUpperCase() + formattedWord.slice(1);
                         }
                         
-                        sentenceBox.textContent += formattedWord + ' ';
+                        updateSentenceText(sentenceBox.textContent + formattedWord + ' ');
                         sentenceBox.scrollTop = sentenceBox.scrollHeight;
                         optionsContainer.innerHTML = '';
                         
@@ -468,7 +516,7 @@
                 if (text) {
                     let words = text.split(/\s+/);
                     words.pop();
-                    sentenceBox.textContent = words.length > 0 ? words.join(' ') + ' ' : '';
+                    updateSentenceText(words.length > 0 ? words.join(' ') + ' ' : '');
                     statusText.innerText = "Last word removed.";
                 }
             });
@@ -484,34 +532,30 @@
                 }
             });
 
-            // Open Confirmation Modal
             clearBtn.addEventListener('click', () => {
                 if (sentenceBox.textContent.trim().length > 0) {
                     clearModal.style.display = 'flex';
                 }
             });
 
-            // Confirm Clear Execution
             confirmClearBtn.addEventListener('click', () => {
-                backupText = sentenceBox.textContent; // Save safety net backup
-                sentenceBox.textContent = '';
+                backupText = sentenceBox.textContent;
+                updateSentenceText('');
                 optionsContainer.innerHTML = '';
                 stopAllListening();
                 clearModal.style.display = 'none';
-                restoreBtn.style.display = 'inline-block'; // Show restore button
-                statusText.innerText = "Cleared. Use 'Restore Text' if this was a mistake.";
+                restoreBtn.style.display = 'inline-block';
+                statusText.innerText = "Cleared. Use 'Restore' if this was a mistake.";
             });
 
-            // Cancel Clear Execution
             cancelClearBtn.addEventListener('click', () => {
                 clearModal.style.display = 'none';
             });
 
-            // Restore Backed-Up Text
             restoreBtn.addEventListener('click', () => {
                 if (backupText) {
-                    sentenceBox.textContent = backupText;
-                    restoreBtn.style.display = 'none'; // Hide after restoring
+                    updateSentenceText(backupText);
+                    restoreBtn.style.display = 'none';
                     statusText.innerText = "Text restored!";
                 }
             });
@@ -560,7 +604,14 @@
                     });
                 }
 
-                phraseQueue = wordsByPosition.map(set => Array.from(set).slice(0, 3)).filter(arr => arr.length > 0);
+                // Ensure EVERY word position has exactly 3 options (using approximation generator if needed)
+                phraseQueue = wordsByPosition.map(set => {
+                    let choices = Array.from(set);
+                    if (choices.length < 3) {
+                        choices = generateApproximations(choices[0]);
+                    }
+                    return choices.slice(0, 3);
+                }).filter(arr => arr.length > 0);
 
                 if (phraseQueue.length > 0) {
                     processNextWordInQueue();
