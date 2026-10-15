@@ -31,6 +31,27 @@
             flex-shrink: 0;
         }
 
+        /* High Contrast Toggle - Top Right Corner */
+        #contrast-toggle-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background-color: #37474f;
+            color: white;
+            box-shadow: 0 3px #263238;
+            font-size: 22px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+            z-index: 100;
+        }
+
         .app-container {
             display: flex;
             flex-direction: row;
@@ -71,12 +92,6 @@
             padding: 6px 14px;
             flex: 1;
             min-width: 130px;
-        }
-        
-        #contrast-toggle-btn {
-            background-color: #37474f;
-            color: white;
-            box-shadow: 0 3px #263238;
         }
 
         #sentence-box {
@@ -196,7 +211,7 @@
         #print-btn { background-color: #00796b; color: #ffffff; box-shadow: 0 3px #004d40; font-weight: bold; flex: 1;}
         #undo-action-btn { background-color: #f57c00; color: #ffffff; box-shadow: 0 3px #e65100; font-weight: bold; flex: 1;}
         #delete-btn { background-color: #e53935; color: #ffffff; box-shadow: 0 3px #b71c1c; font-weight: bold; flex: 1;}
-        #capitalize-btn { background-color: #43a047; color: #ffffff; box-shadow: 0 3px #1b5e20; font-weight: bold; flex: 1; }
+        #capitalize-btn { background-color: #43a047; color: #ffffff; box-shadow: 0 3px #1b5e20; font-weight: bold; flex: 1; display: none; }
         #clear-btn { background-color: #424242; color: #ffffff; box-shadow: 0 3px #212121; flex: 1;}
         #restore-btn { background-color: #00897b; color: #ffffff; box-shadow: 0 3px #004d40; font-weight: bold; display: none; flex: 1;}
         #read-sentence-btn { background-color: #6a1b9a; color: #ffffff; box-shadow: 0 3px #4a148c; flex: 1;}
@@ -261,6 +276,9 @@
             color: #00e5ff;
         }
         body.high-contrast button {
+            border: 2px solid #ffffff;
+        }
+        body.high-contrast #contrast-toggle-btn {
             border: 2px solid #ffffff;
         }
 
@@ -329,7 +347,7 @@
 
         @media print {
             body { background-color: white !important; padding: 0 !important; margin: 0 !important; height: auto !important; overflow: visible !important; color: black !important; }
-            h1, .right-panel, .edit-header, .modal-overlay, #status { display: none !important; }
+            h1, .right-panel, .edit-header, .modal-overlay, #status, #contrast-toggle-btn { display: none !important; }
             .app-container { display: block !important; max-width: 100% !important; height: auto !important; }
             .left-panel { width: 100% !important; height: auto !important; }
             #sentence-box {
@@ -341,6 +359,8 @@
 </head>
 <body>
 
+    <button id="contrast-toggle-btn" title="Toggle High Contrast">🌓</button>
+
     <h1>🎙️ Voice Choice Writer ✍️</h1>
     
     <div class="app-container">
@@ -349,7 +369,6 @@
             <div class="edit-header">
                 <button id="edit-toggle-btn" class="mode-btn">✏️ Edit Mode: OFF</button>
                 <button id="teacher-toggle-btn" class="mode-btn">👩‍🏫 Teacher Mode: OFF</button>
-                <button id="contrast-toggle-btn" class="mode-btn">🌓 High Contrast</button>
             </div>
             <div id="sentence-box" contenteditable="false"></div>
         </div>
@@ -440,6 +459,7 @@
         const editToggleBtn = document.getElementById('edit-toggle-btn');
         const teacherToggleBtn = document.getElementById('teacher-toggle-btn');
         const contrastToggleBtn = document.getElementById('contrast-toggle-btn');
+        const capitalizeBtn = document.getElementById('capitalize-btn');
 
         if (!SpeechRecognition) {
             statusText.innerText = "Oops! Your browser doesn't support voice typing. Try Google Chrome!";
@@ -479,7 +499,7 @@
             function saveStateToHistory() {
                 textHistory.push(getCurrentText());
                 if (textHistory.length > 30) {
-                    textHistory.shift(); // Keep history from growing forever
+                    textHistory.shift(); 
                 }
             }
 
@@ -519,7 +539,6 @@
             contrastToggleBtn.addEventListener('click', () => {
                 isHighContrast = !isHighContrast;
                 document.body.classList.toggle('high-contrast', isHighContrast);
-                contrastToggleBtn.innerText = isHighContrast ? "☀️ Normal View" : "🌓 High Contrast";
             });
 
             function updateModes() {
@@ -537,6 +556,8 @@
                     editToggleBtn.innerText = "✏️ Edit Mode: OFF";
                     editToggleBtn.style.backgroundColor = "#00796b";
                     
+                    capitalizeBtn.style.display = 'none'; // Hide capitalize button
+                    
                     statusText.innerText = "Teacher Mode ON: Keyboard unlocked.";
                     sentenceBox.focus();
                 } else if (isEditMode) {
@@ -550,10 +571,12 @@
                     teacherToggleBtn.innerText = "👩‍🏫 Teacher Mode: OFF";
                     teacherToggleBtn.style.backgroundColor = "#00796b";
                     
-                    statusText.innerText = "Edit Mode ON: Click a gap to add, or click a word to replace.";
+                    capitalizeBtn.style.display = 'block'; // Show capitalize button in flex container
+                    
+                    statusText.innerText = "Edit Mode ON: Tap a word or gap to insert text or punctuation there!";
                 } else {
                     sentenceBox.innerHTML = ''; 
-                    sentenceBox.textContent = currentExtractedText;
+                    sentenceBox.textContent = currentExtractedText; 
                     
                     sentenceBox.contentEditable = "false";
                     sentenceBox.className = '';
@@ -563,317 +586,383 @@
                     teacherToggleBtn.innerText = "👩‍🏫 Teacher Mode: OFF";
                     teacherToggleBtn.style.backgroundColor = "#00796b";
                     
-                    statusText.innerText = "Voice Mode Active.";
-                    savedCaretRange = null; 
+                    capitalizeBtn.style.display = 'none'; // Hide capitalize button
+                    
+                    statusText.innerText = "Standard Mode: Text will go at the end.";
                 }
-                localStorage.setItem('saved_voice_writer_text', currentExtractedText);
             }
 
             editToggleBtn.addEventListener('click', () => {
                 isEditMode = !isEditMode;
-                isTeacherMode = false;
+                if (isEditMode) isTeacherMode = false; 
                 updateModes();
             });
 
+            // TEACHER MODAL LOGIC
             const teacherModal = document.getElementById('teacher-modal');
             teacherToggleBtn.addEventListener('click', () => {
                 if (isTeacherMode) {
+                    // Turn off teacher mode directly
                     isTeacherMode = false;
                     updateModes();
                 } else {
                     teacherModal.style.display = 'flex';
                 }
             });
+
             document.getElementById('confirm-teacher-btn').addEventListener('click', () => {
                 teacherModal.style.display = 'none';
                 isTeacherMode = true;
-                isEditMode = false;
+                isEditMode = false; 
                 updateModes();
             });
+
             document.getElementById('cancel-teacher-btn').addEventListener('click', () => {
                 teacherModal.style.display = 'none';
             });
 
-            function saveCaretPosition() {
+            sentenceBox.addEventListener('input', () => {
                 if (isTeacherMode) {
-                    const sel = window.getSelection();
-                    if (sel.rangeCount > 0) {
-                        savedCaretRange = sel.getRangeAt(0).cloneRange();
-                    }
-                }
-            }
-            sentenceBox.addEventListener('keyup', () => {
-                if (isTeacherMode) {
-                    saveCaretPosition();
                     localStorage.setItem('saved_voice_writer_text', getCurrentText());
                 }
             });
-            sentenceBox.addEventListener('click', saveCaretPosition);
 
-            window.addEventListener('load', () => {
-                const saved = localStorage.getItem('saved_voice_writer_text');
-                if (saved && saved.trim().length > 0) {
-                    sentenceBox.textContent = saved;
-                    statusText.innerText = "Restored your previous work!";
+            // --- LOCAL STORAGE INIT --- //
+            const savedText = localStorage.getItem('saved_voice_writer_text');
+            if (savedText) {
+                updateSentenceText(savedText);
+            }
+
+            // --- RECOGNITION START/STOP --- //
+            listenBtn.addEventListener('click', () => {
+                warmUpMicrophoneHardware();
+                if (!isListeningActive) {
+                    startListeningCycle();
                 }
             });
 
-            // --- INSERTION LOGIC --- //
-            function insertTextAtCursor(textToInsert) {
-                saveStateToHistory(); // Save state before making any insertions
+            stopBtn.addEventListener('click', () => {
+                stopListeningCycle();
+                statusText.innerText = "Stopped.";
+            });
 
-                if (isTeacherMode) {
-                    sentenceBox.focus();
-                    const sel = window.getSelection();
-                    if (savedCaretRange && sentenceBox.contains(savedCaretRange.commonAncestorContainer)) {
-                        sel.removeAllRanges();
-                        sel.addRange(savedCaretRange);
-                        const range = sel.getRangeAt(0);
-                        range.deleteContents();
-                        const textNode = document.createTextNode(textToInsert);
-                        range.insertNode(textNode);
-                        range.setStartAfter(textNode);
-                        range.setEndAfter(textNode);
-                        sel.removeAllRanges();
-                        sel.addRange(range);
-                        savedCaretRange = range.cloneRange();
-                    } else {
-                        sentenceBox.textContent += textToInsert;
+            function startListeningCycle() {
+                isAutoListening = true;
+                if (!isListeningActive) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.error("Recognition start error:", e);
                     }
-                } 
-                else if (isEditMode) {
-                    const activeEl = document.querySelector('.active-child-target');
-                    if (activeEl) {
-                        if (activeEl.classList.contains('child-word')) {
-                            activeEl.innerText = textToInsert.trim();
-                        } else if (activeEl.classList.contains('child-gap')) {
-                            activeEl.insertAdjacentText('beforebegin', " " + textToInsert.trim() + " ");
-                        }
-                    } else {
-                        sentenceBox.insertAdjacentText('beforeend', " " + textToInsert.trim());
-                    }
-                    renderChildSpans(getCurrentText());
-                } 
-                else {
-                    let text = sentenceBox.textContent;
-                    if (text.length > 0 && !text.endsWith(' ') && textToInsert.trim().length > 0 && !/[.,!?"]/.test(textToInsert)) {
-                        text += ' '; 
-                    }
-                    sentenceBox.textContent = text + textToInsert;
-                    sentenceBox.scrollTop = sentenceBox.scrollHeight;
                 }
-                
-                localStorage.setItem('saved_voice_writer_text', getCurrentText());
             }
 
-            function generateApproximations(baseWord) {
-                const shortWordDb = { 'i': ['i', 'eye', 'a'], 'a': ['a', 'uh', 'ey'], 'my': ['my', 'me', 'mai'], 'me': ['me', 'my', 'may'], 'is': ['is', 'his', 'as'], 'it': ['it', 'at', 'if'], 'the': ['the', 'they', 'a'], 'to': ['to', 'two', 'too'] };
-                if (shortWordDb[baseWord.toLowerCase()]) return shortWordDb[baseWord.toLowerCase()];
-                const phonetics = { 'th': ['f', 'v', 's'], 'r': ['w', 'l'], 'l': ['w', 'y'], 's': ['z', 'sh'], 'c': ['k', 's'], 'k': ['g', 'c'], 'p': ['b'], 't': ['d'] };
-                let choices = new Set([baseWord]);
-                for (let key in phonetics) {
-                    if (baseWord.includes(key)) {
-                        phonetics[key].forEach(rep => { if (choices.size < 3) choices.add(baseWord.replace(key, rep)); });
-                    }
-                }
-                if (choices.size < 3 && baseWord.length > 3) choices.add(baseWord.slice(0, -1));
-                if (choices.size < 3) choices.add(baseWord + "e");
-                const simpleFallbacks = ['my', 'a', 'i', 'the', 'is', 'it', 'to'];
-                let fallbackIdx = 0;
-                while (choices.size < 3 && fallbackIdx < simpleFallbacks.length) {
-                    if (simpleFallbacks[fallbackIdx] !== baseWord) choices.add(simpleFallbacks[fallbackIdx]);
-                    fallbackIdx++;
-                }
-                return Array.from(choices).slice(0, 3);
-            }
-
-            function safeStartListen() {
-                if (!isAutoListening) return;
-                clearTimeout(restartTimer);
-                warmUpMicrophoneHardware();
-                if (phraseQueue.length > 0) { processNextWordInQueue(); return; }
-                if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-                    statusText.innerText = "Waiting for audio to finish...";
-                    restartTimer = setTimeout(safeStartListen, 350);
-                    return;
-                }
-                if (isListeningActive) return;
-                try { recognition.start(); } catch (e) { restartTimer = setTimeout(safeStartListen, 350); }
-            }
-
-            function stopAllListening() {
+            function stopListeningCycle() {
                 isAutoListening = false;
-                isListeningActive = false;
-                phraseQueue = [];
                 clearTimeout(restartTimer);
-                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-                try { recognition.stop(); } catch (e) {}
-                stopListeningUI();
+                try {
+                    recognition.stop();
+                } catch (e) {}
             }
 
-            function stopListeningUI() {
-                listenBtn.style.backgroundColor = "#2e7d32";
-                listenBtn.style.color = "#ffffff";
-                listenBtn.innerText = "🎤 Start Listening";
+            recognition.onstart = () => {
+                isListeningActive = true;
+                statusText.innerText = "🎙️ Listening... speak now!";
+                document.body.style.backgroundColor = isHighContrast ? "#1a0000" : "#ffebee";
+            };
+
+            recognition.onerror = (event) => {
+                if (event.error === 'no-speech') {
+                    statusText.innerText = "Didn't hear anything. Try again.";
+                } else if (event.error === 'aborted') {
+                    // Ignore manual aborts
+                } else {
+                    statusText.innerText = "Microphone error: " + event.error;
+                }
+                isListeningActive = false;
+                scheduleRestart();
+            };
+
+            recognition.onend = () => {
+                isListeningActive = false;
+                document.body.style.backgroundColor = isHighContrast ? "#121212" : "#e0f7fa";
+                scheduleRestart();
+            };
+
+            function scheduleRestart() {
+                if (isAutoListening) {
+                    statusText.innerText = "Thinking...";
+                    clearTimeout(restartTimer);
+                    restartTimer = setTimeout(() => {
+                        if (isAutoListening && !isListeningActive) {
+                            try { recognition.start(); } catch (e) { }
+                        }
+                    }, 500); 
+                } else {
+                    document.body.style.backgroundColor = isHighContrast ? "#121212" : "#e0f7fa";
+                }
             }
 
-            function updateListeningUI() {
-                listenBtn.style.backgroundColor = "#fbc02d"; 
-                listenBtn.style.color = "#000000";
-                listenBtn.innerText = "🔴 Listening Active";
-            }
-
-            function speakText(text, callback) {
-                if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel();
-                    const utterance = new SpeechSynthesisUtterance(text);
-                    utterance.rate = 0.85; 
-                    if (callback) { utterance.onend = callback; utterance.onerror = callback; }
-                    window.speechSynthesis.speak(utterance);
-                } else if (callback) { callback(); }
-            }
-
-            function processNextWordInQueue() {
-                if (phraseQueue.length === 0) {
-                    if (isAutoListening) {
-                        statusText.innerText = "Phrase finished! Mic starting...";
-                        restartTimer = setTimeout(safeStartListen, 400);
+            // --- RESULT HANDLING --- //
+            recognition.onresult = (event) => {
+                let alternatives = event.results[0];
+                let uniquePhrases = [];
+                for (let i = 0; i < alternatives.length; i++) {
+                    let text = alternatives[i].transcript.trim().toLowerCase();
+                    let formatted = text.charAt(0).toUpperCase() + text.slice(1);
+                    if (!uniquePhrases.includes(formatted)) {
+                        uniquePhrases.push(formatted);
                     }
-                    return;
                 }
 
-                const wordOptions = phraseQueue.shift();
-                optionsContainer.innerHTML = ''; 
-                statusText.innerText = `Pick word (${phraseQueue.length + 1} remaining): 👇`;
+                if (uniquePhrases.length > 0) {
+                    phraseQueue.push(uniquePhrases);
+                    if (phraseQueue.length === 1) {
+                        displayOptions(phraseQueue[0]);
+                    }
+                    stopListeningCycle(); 
+                }
+            };
 
-                wordOptions.forEach(word => {
+            function displayOptions(options) {
+                optionsContainer.innerHTML = '';
+                statusText.innerText = "Which one did you mean? Tap a purple button!";
+                
+                options.forEach(optionText => {
                     const btn = document.createElement('button');
                     btn.className = 'option-btn';
-                    btn.innerText = word;
-                    
-                    btn.onmouseenter = () => { if (!isListeningActive) speakText(word); };
-
+                    btn.innerText = optionText;
                     btn.onclick = () => {
-                        let formattedWord = word;
-                        const currentText = getCurrentText();
-                        
-                        if (!isEditMode && !isTeacherMode && (currentText.length === 0 || /[.!?]\s*$/.test(currentText))) {
-                            formattedWord = formattedWord.charAt(0).toUpperCase() + formattedWord.slice(1);
-                        }
-                        
-                        insertTextAtCursor(formattedWord);
+                        saveStateToHistory();
+                        insertText(optionText);
                         optionsContainer.innerHTML = '';
-                        setTimeout(processNextWordInQueue, 250);
+                        statusText.innerText = "Great! Ready for more.";
+                        
+                        phraseQueue.shift();
+                        if (phraseQueue.length > 0) {
+                            displayOptions(phraseQueue[0]);
+                        } else {
+                            setTimeout(() => { startListeningCycle(); }, 600);
+                        }
                     };
                     optionsContainer.appendChild(btn);
                 });
             }
 
-            // --- BUTTON HANDLERS --- //
-            listenBtn.addEventListener('click', () => {
-                optionsContainer.innerHTML = '';
-                phraseQueue = [];
-                isAutoListening = true;
-                warmUpMicrophoneHardware();
-                safeStartListen();
-            });
+            function insertText(newWords) {
+                if (isEditMode) {
+                    let activeEl = document.querySelector('.active-child-target');
+                    if (activeEl) {
+                        if (activeEl.classList.contains('child-gap')) {
+                            // Insert into gap
+                            let wordsArr = newWords.split(' ');
+                            let nextEl = activeEl.nextSibling;
+                            wordsArr.forEach(w => {
+                                let wSpan = document.createElement('span');
+                                wSpan.className = 'child-word';
+                                wSpan.innerText = w;
+                                wSpan.onclick = () => setActiveTarget(wSpan);
+                                
+                                let newGap = createGapSpan();
+                                
+                                sentenceBox.insertBefore(wSpan, nextEl);
+                                sentenceBox.insertBefore(newGap, nextEl);
+                            });
+                            activeEl.classList.remove('active-child-target');
+                        } else if (activeEl.classList.contains('child-word')) {
+                            // Replace word
+                            activeEl.innerText = newWords;
+                            activeEl.classList.remove('active-child-target');
+                        }
+                        localStorage.setItem('saved_voice_writer_text', getCurrentText());
+                        return;
+                    }
+                    // If no target, fall through to append
+                } else if (isTeacherMode) {
+                    sentenceBox.focus();
+                    let selection = window.getSelection();
+                    if (selection.rangeCount > 0 && sentenceBox.contains(selection.anchorNode)) {
+                        let range = selection.getRangeAt(0);
+                        range.deleteContents();
+                        
+                        let textNode = document.createTextNode(" " + newWords);
+                        range.insertNode(textNode);
+                        
+                        range.setStartAfter(textNode);
+                        range.setEndAfter(textNode);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        
+                        localStorage.setItem('saved_voice_writer_text', getCurrentText());
+                        return;
+                    }
+                }
+                
+                // Default Append
+                let currentText = getCurrentText();
+                if (currentText.length > 0 && !currentText.endsWith(' ')) {
+                    currentText += " ";
+                }
+                currentText += newWords;
+                updateSentenceText(currentText);
+            }
 
-            stopBtn.addEventListener('click', () => {
-                stopAllListening();
-                statusText.innerText = "Listening stopped. Click Start when ready.";
-                optionsContainer.innerHTML = '';
-            });
+            function addPunctuation(mark) {
+                saveStateToHistory();
+                
+                if (isEditMode) {
+                    let activeEl = document.querySelector('.active-child-target');
+                    if (activeEl) {
+                        if (activeEl.classList.contains('child-gap')) {
+                            let prevWord = activeEl.previousElementSibling;
+                            if (prevWord && prevWord.classList.contains('child-word')) {
+                                prevWord.innerText += mark;
+                            } else {
+                                let wSpan = document.createElement('span');
+                                wSpan.className = 'child-word';
+                                wSpan.innerText = mark;
+                                wSpan.onclick = () => setActiveTarget(wSpan);
+                                sentenceBox.insertBefore(wSpan, activeEl);
+                                
+                                let newGap = createGapSpan();
+                                sentenceBox.insertBefore(newGap, activeEl);
+                            }
+                        } else if (activeEl.classList.contains('child-word')) {
+                            activeEl.innerText += mark;
+                        }
+                        localStorage.setItem('saved_voice_writer_text', getCurrentText());
+                        return;
+                    }
+                } else if (isTeacherMode) {
+                    sentenceBox.focus();
+                    let selection = window.getSelection();
+                    if (selection.rangeCount > 0 && sentenceBox.contains(selection.anchorNode)) {
+                        let range = selection.getRangeAt(0);
+                        range.deleteContents();
+                        let textNode = document.createTextNode(mark);
+                        range.insertNode(textNode);
+                        range.setStartAfter(textNode);
+                        range.setEndAfter(textNode);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        localStorage.setItem('saved_voice_writer_text', getCurrentText());
+                        return;
+                    }
+                }
 
-            document.getElementById('comma-btn').addEventListener('click', () => { insertTextAtCursor(','); if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300); });
-            document.getElementById('period-btn').addEventListener('click', () => { insertTextAtCursor('.'); if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300); });
-            document.getElementById('question-btn').addEventListener('click', () => { insertTextAtCursor('?'); if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300); });
-            document.getElementById('exclamation-btn').addEventListener('click', () => { insertTextAtCursor('!'); if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300); });
-            document.getElementById('quote-btn').addEventListener('click', () => { insertTextAtCursor('"'); if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300); });
+                // Default Append
+                let currentText = getCurrentText();
+                currentText = currentText.trimEnd() + mark;
+                updateSentenceText(currentText);
+            }
 
-            // UNDO Action Button Handler
+            // Bind Punctuation Buttons
+            document.getElementById('comma-btn').addEventListener('click', () => addPunctuation(','));
+            document.getElementById('period-btn').addEventListener('click', () => addPunctuation('.'));
+            document.getElementById('question-btn').addEventListener('click', () => addPunctuation('?'));
+            document.getElementById('exclamation-btn').addEventListener('click', () => addPunctuation('!'));
+            document.getElementById('quote-btn').addEventListener('click', () => addPunctuation('"'));
+
+            // Undo Action
             document.getElementById('undo-action-btn').addEventListener('click', () => {
                 if (textHistory.length > 0) {
                     const previousText = textHistory.pop();
                     updateSentenceText(previousText);
-                    statusText.innerText = "Undo successful!";
+                    statusText.innerText = "Undo successful.";
                 } else {
                     statusText.innerText = "Nothing to undo.";
                 }
             });
 
-            // CAPITALIZE Action Button Handler
-            document.getElementById('capitalize-btn').addEventListener('click', () => {
+            // Delete Action
+            document.getElementById('delete-btn').addEventListener('click', () => {
+                saveStateToHistory();
+                
                 if (isEditMode) {
-                    const activeEl = document.querySelector('.active-child-target');
+                    let activeEl = document.querySelector('.active-child-target');
+                    if (activeEl) {
+                        if (activeEl.classList.contains('child-word')) {
+                            let nextGap = activeEl.nextElementSibling;
+                            if (nextGap && nextGap.classList.contains('child-gap')) {
+                                sentenceBox.removeChild(nextGap);
+                            }
+                            sentenceBox.removeChild(activeEl);
+                            localStorage.setItem('saved_voice_writer_text', getCurrentText());
+                        }
+                        statusText.innerText = "Deleted target.";
+                        return;
+                    }
+                }
+
+                let currentText = getCurrentText();
+                if (currentText.length > 0) {
+                    let lastSpace = currentText.lastIndexOf(' ');
+                    if (lastSpace > -1) {
+                        currentText = currentText.substring(0, lastSpace).trim();
+                    } else {
+                        currentText = ""; 
+                    }
+                    updateSentenceText(currentText);
+                    statusText.innerText = "Deleted last word.";
+                }
+            });
+
+            // Capitalize Action (Toggle logic)
+            capitalizeBtn.addEventListener('click', () => {
+                if (isEditMode) {
+                    let activeEl = document.querySelector('.active-child-target');
                     if (activeEl && activeEl.classList.contains('child-word')) {
                         saveStateToHistory();
                         let text = activeEl.innerText;
-                        activeEl.innerText = text.charAt(0).toUpperCase() + text.slice(1);
-                        renderChildSpans(getCurrentText());
-                        localStorage.setItem('saved_voice_writer_text', getCurrentText());
-                        statusText.innerText = "Capitalized!";
-                    } else {
-                        statusText.innerText = "Click a word (yellow border) to capitalize it!";
-                    }
-                } else {
-                    statusText.innerText = "Switch to ✏️ Edit Mode to use Capitalize!";
-                }
-            });
-
-            document.getElementById('delete-btn').addEventListener('click', () => {
-                saveStateToHistory(); // Save state before deletion
-
-                if (isTeacherMode) {
-                    sentenceBox.focus();
-                    if (savedCaretRange) {
-                        const sel = window.getSelection();
-                        sel.removeAllRanges();
-                        sel.addRange(savedCaretRange);
-                        if (!savedCaretRange.collapsed) {
-                            savedCaretRange.deleteContents();
+                        let firstChar = text.charAt(0);
+                        
+                        // Check if it's already uppercase
+                        if (firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase()) {
+                            // Un-capitalize it (make lowercase)
+                            activeEl.innerText = firstChar.toLowerCase() + text.slice(1);
+                            statusText.innerText = "Un-capitalized word.";
                         } else {
-                            const newRange = document.createRange();
-                            newRange.setStart(savedCaretRange.startContainer, Math.max(0, savedCaretRange.startOffset - 1));
-                            newRange.setEnd(savedCaretRange.startContainer, savedCaretRange.startOffset);
-                            newRange.deleteContents();
+                            // Capitalize it
+                            activeEl.innerText = firstChar.toUpperCase() + text.slice(1);
+                            statusText.innerText = "Capitalized word.";
                         }
-                        savedCaretRange = sel.getRangeAt(0).cloneRange();
+                        localStorage.setItem('saved_voice_writer_text', getCurrentText());
                     } else {
-                        let text = getCurrentText();
-                        sentenceBox.textContent = text.slice(0, -1);
-                    }
-                    localStorage.setItem('saved_voice_writer_text', getCurrentText());
-                } 
-                else if (isEditMode) {
-                    const activeEl = document.querySelector('.active-child-target');
-                    if (activeEl && activeEl.classList.contains('child-word')) {
-                        activeEl.previousSibling.remove(); 
-                        activeEl.remove();
-                        renderChildSpans(getCurrentText()); 
-                    } else {
-                        statusText.innerText = "Click a word (yellow border) to delete it!";
-                    }
-                } 
-                else {
-                    let text = getCurrentText();
-                    const words = text.trim().split(/\s+/);
-                    if (words.length > 0 && text.trim().length > 0) {
-                        words.pop();
-                        const newText = words.join(' ');
-                        sentenceBox.textContent = newText;
-                        localStorage.setItem('saved_voice_writer_text', newText);
+                        statusText.innerText = "Tap a word (yellow border) to change its capitalization!";
                     }
                 }
             });
 
-            document.getElementById('copy-btn').addEventListener('click', () => {
-                const text = getCurrentText();
-                if (text) {
-                    navigator.clipboard.writeText(text).then(() => {
-                        statusText.innerText = "Copied to clipboard!";
-                        setTimeout(() => statusText.innerText = "Ready.", 2000);
-                    });
+            // --- READ ALOUD --- //
+            document.getElementById('read-sentence-btn').addEventListener('click', () => {
+                let currentText = getCurrentText();
+                if (currentText === "") {
+                    statusText.innerText = "Nothing to read yet!";
+                    return;
                 }
+                stopListeningCycle(); 
+                
+                let utterance = new SpeechSynthesisUtterance(currentText);
+                utterance.rate = 0.85; 
+                utterance.lang = 'en-GB';
+                
+                utterance.onend = () => {
+                    statusText.innerText = "Finished reading.";
+                };
+                
+                speechSynthesis.cancel(); 
+                speechSynthesis.speak(utterance);
+                statusText.innerText = "🔊 Reading...";
+            });
+
+            // --- COPY, PRINT, CLEAR, RESTORE --- //
+            document.getElementById('copy-btn').addEventListener('click', () => {
+                let currentText = getCurrentText();
+                navigator.clipboard.writeText(currentText).then(() => {
+                    statusText.innerText = "Copied to clipboard!";
+                }).catch(err => {
+                    statusText.innerText = "Couldn't copy text.";
+                });
             });
 
             document.getElementById('print-btn').addEventListener('click', () => {
@@ -881,143 +970,40 @@
             });
 
             const clearModal = document.getElementById('clear-modal');
+            const restoreBtn = document.getElementById('restore-btn');
+
             document.getElementById('clear-btn').addEventListener('click', () => {
-                clearModal.style.display = 'flex';
+                clearModal.style.display = 'flex'; 
             });
+
+            document.getElementById('cancel-clear-btn').addEventListener('click', () => {
+                clearModal.style.display = 'none'; 
+            });
+
             document.getElementById('confirm-clear-btn').addEventListener('click', () => {
-                backupText = getCurrentText();
-                document.getElementById('restore-btn').style.display = 'inline-block';
+                let currentText = getCurrentText();
+                if (currentText.trim() !== "") {
+                    backupText = currentText; 
+                    restoreBtn.style.display = 'inline-block'; 
+                }
                 
                 updateSentenceText("");
-                
-                textHistory = []; // Reset undo history on clear
-                
-                statusText.innerText = "Cleared. Click restore if this was a mistake.";
-                clearModal.style.display = 'none';
-                localStorage.removeItem('saved_voice_writer_text');
-            });
-            document.getElementById('cancel-clear-btn').addEventListener('click', () => {
-                clearModal.style.display = 'none';
-            });
-
-            document.getElementById('restore-btn').addEventListener('click', () => {
-                updateSentenceText(backupText);
-                statusText.innerText = "Restored!";
-                document.getElementById('restore-btn').style.display = 'none';
-            });
-
-            document.getElementById('read-sentence-btn').addEventListener('click', () => {
-                const text = getCurrentText();
-                if (text) {
-                    const wasListening = isAutoListening;
-                    if (wasListening) stopAllListening();
-                    statusText.innerText = "Reading your sentence...";
-                    speakText(text, () => {
-                        statusText.innerText = "Finished reading.";
-                        if (wasListening) {
-                            isAutoListening = true;
-                            safeStartListen();
-                        }
-                    });
-                }
-            });
-
-            // --- RECOGNITION EVENTS --- //
-            recognition.onstart = () => {
-                isListeningActive = true;
-                updateListeningUI();
-                statusText.innerText = "Listening... Speak a short phrase!";
-            };
-
-            recognition.onspeechstart = () => {
-                isListeningActive = true;
-            };
-
-            recognition.onaudiostart = () => {
-                isListeningActive = true;
-            };
-
-            recognition.onsoundstart = () => {
-                isListeningActive = true;
-            };
-
-            recognition.onend = () => {
-                isListeningActive = false;
-                if (isAutoListening && phraseQueue.length === 0) {
-                    statusText.innerText = "Processing...";
-                    restartTimer = setTimeout(safeStartListen, 400);
-                } else if (!isAutoListening) {
-                    stopListeningUI();
-                }
-            };
-
-            recognition.onerror = (event) => {
-                console.warn("Recognition error:", event.error);
-                isListeningActive = false;
-                if (event.error === 'no-speech' && isAutoListening) {
-                    restartTimer = setTimeout(safeStartListen, 500);
-                } else {
-                    stopListeningUI();
-                    if (event.error !== 'aborted') {
-                        statusText.innerText = `Microphone error: ${event.error}. Please try again.`;
-                        isAutoListening = false;
-                    }
-                }
-            };
-
-            recognition.onresult = (event) => {
-                isListeningActive = false;
-                const resultCount = event.results.length;
-                if (resultCount === 0) return;
-                
-                const finalResult = event.results[resultCount - 1];
-                if (!finalResult.isFinal) return;
-
-                let bestPhrase = "";
-                if (finalResult.length > 0) {
-                    bestPhrase = finalResult[0].transcript.trim().toLowerCase();
-                } else {
-                    return; 
-                }
-
-                if (!bestPhrase) return;
-
-                const phraseWords = bestPhrase.split(/\s+/);
-                const isShortPhrase = phraseWords.length <= 4; 
+                textHistory = []; 
+                optionsContainer.innerHTML = '';
                 phraseQueue = [];
+                statusText.innerText = "Text cleared. Ready for a new story!";
+                clearModal.style.display = 'none';
+            });
 
-                if (isShortPhrase && finalResult.length > 1) {
-                    for (let i = 0; i < phraseWords.length; i++) {
-                        let wordOptions = new Set();
-                        
-                        for (let altIndex = 0; altIndex < finalResult.length; altIndex++) {
-                            const altTranscript = finalResult[altIndex].transcript.trim().toLowerCase();
-                            const altWords = altTranscript.split(/\s+/);
-                            if (altWords.length === phraseWords.length) {
-                                wordOptions.add(altWords[i]);
-                            }
-                        }
-                        
-                        if (wordOptions.size === 0) {
-                            wordOptions.add(phraseWords[i]);
-                        }
-                        
-                        let optionsArray = Array.from(wordOptions);
-                        if (optionsArray.length < 3) {
-                            const approx = generateApproximations(optionsArray[0]);
-                            approx.forEach(w => { if(optionsArray.length < 3 && !optionsArray.includes(w)) optionsArray.push(w); });
-                        }
-                        
-                        phraseQueue.push(optionsArray.slice(0,3));
-                    }
-                } else {
-                    phraseWords.forEach(word => {
-                        phraseQueue.push([word]); 
-                    });
+            restoreBtn.addEventListener('click', () => {
+                if (backupText !== "") {
+                    saveStateToHistory();
+                    updateSentenceText(backupText);
+                    statusText.innerText = "Text restored!";
+                    restoreBtn.style.display = 'none'; 
+                    backupText = ""; 
                 }
-                
-                processNextWordInQueue();
-            };
+            });
         }
     </script>
 </body>
