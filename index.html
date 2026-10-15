@@ -320,6 +320,7 @@
                 <button id="period-btn" class="punct-btn">.</button>
                 <button id="question-btn" class="punct-btn">?</button>
                 <button id="exclamation-btn" class="punct-btn">!</button>
+                <button id="quote-btn" class="punct-btn">"</button>
             </div>
 
             <div class="controls-group">
@@ -597,7 +598,7 @@
                 } 
                 else {
                     let text = sentenceBox.textContent;
-                    if (text.length > 0 && !text.endsWith(' ') && textToInsert.trim().length > 0 && !/[.,!?]/.test(textToInsert)) {
+                    if (text.length > 0 && !text.endsWith(' ') && textToInsert.trim().length > 0 && !/[.,!?"]/.test(textToInsert)) {
                         text += ' '; 
                     }
                     sentenceBox.textContent = text + textToInsert;
@@ -729,38 +730,62 @@
             document.getElementById('period-btn').addEventListener('click', () => { insertTextAtCursor('.'); if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300); });
             document.getElementById('question-btn').addEventListener('click', () => { insertTextAtCursor('?'); if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300); });
             document.getElementById('exclamation-btn').addEventListener('click', () => { insertTextAtCursor('!'); if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300); });
+            document.getElementById('quote-btn').addEventListener('click', () => { insertTextAtCursor('"'); if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300); });
 
             // UNDO Action Button Handler
             document.getElementById('undo-action-btn').addEventListener('click', () => {
                 if (textHistory.length > 0) {
-                    const previousState = textHistory.pop();
-                    updateSentenceText(previousState);
-                    statusText.innerText = "Undo successful.";
+                    const previousText = textHistory.pop();
+                    updateSentenceText(previousText);
+                    statusText.innerText = "Undo successful!";
                 } else {
-                    statusText.innerText = "Nothing left to undo!";
+                    statusText.innerText = "Nothing to undo.";
                 }
             });
 
-            // DELETE Button Handler
             document.getElementById('delete-btn').addEventListener('click', () => {
-                saveStateToHistory(); // Save state before deleting
+                saveStateToHistory(); // Save state before deletion
 
-                if (isEditMode) {
+                if (isTeacherMode) {
+                    sentenceBox.focus();
+                    if (savedCaretRange) {
+                        const sel = window.getSelection();
+                        sel.removeAllRanges();
+                        sel.addRange(savedCaretRange);
+                        if (!savedCaretRange.collapsed) {
+                            savedCaretRange.deleteContents();
+                        } else {
+                            const newRange = document.createRange();
+                            newRange.setStart(savedCaretRange.startContainer, Math.max(0, savedCaretRange.startOffset - 1));
+                            newRange.setEnd(savedCaretRange.startContainer, savedCaretRange.startOffset);
+                            newRange.deleteContents();
+                        }
+                        savedCaretRange = sel.getRangeAt(0).cloneRange();
+                    } else {
+                        let text = getCurrentText();
+                        sentenceBox.textContent = text.slice(0, -1);
+                    }
+                    localStorage.setItem('saved_voice_writer_text', getCurrentText());
+                } 
+                else if (isEditMode) {
                     const activeEl = document.querySelector('.active-child-target');
                     if (activeEl && activeEl.classList.contains('child-word')) {
-                        activeEl.remove(); 
-                        renderChildSpans(getCurrentText());
-                        statusText.innerText = "Word deleted.";
-                        return;
+                        activeEl.previousSibling.remove(); 
+                        activeEl.remove();
+                        renderChildSpans(getCurrentText()); 
+                    } else {
+                        statusText.innerText = "Click a word (yellow border) to delete it!";
                     }
-                }
-                
-                let text = getCurrentText();
-                if (text) {
-                    let words = text.split(/\s+/);
-                    words.pop();
-                    updateSentenceText(words.length > 0 ? words.join(' ') + ' ' : '');
-                    statusText.innerText = "Last word removed.";
+                } 
+                else {
+                    let text = getCurrentText();
+                    const words = text.trim().split(/\s+/);
+                    if (words.length > 0 && text.trim().length > 0) {
+                        words.pop();
+                        const newText = words.join(' ');
+                        sentenceBox.textContent = newText;
+                        localStorage.setItem('saved_voice_writer_text', newText);
+                    }
                 }
             });
 
@@ -768,50 +793,55 @@
                 const text = getCurrentText();
                 if (text) {
                     navigator.clipboard.writeText(text).then(() => {
-                        const originalText = document.getElementById('copy-btn').innerText;
-                        document.getElementById('copy-btn').innerText = "✅ Copied!";
-                        setTimeout(() => document.getElementById('copy-btn').innerText = originalText, 2500);
+                        statusText.innerText = "Copied to clipboard!";
+                        setTimeout(() => statusText.innerText = "Ready.", 2000);
                     });
                 }
             });
 
             document.getElementById('print-btn').addEventListener('click', () => {
-                if (getCurrentText()) { window.print(); } else { statusText.innerText = "Nothing to print yet!"; }
+                window.print();
             });
 
             const clearModal = document.getElementById('clear-modal');
-            const restoreBtn = document.getElementById('restore-btn');
             document.getElementById('clear-btn').addEventListener('click', () => {
-                if (getCurrentText().length > 0) clearModal.style.display = 'flex';
+                clearModal.style.display = 'flex';
             });
             document.getElementById('confirm-clear-btn').addEventListener('click', () => {
-                saveStateToHistory(); // Allows undoing a clear as well!
                 backupText = getCurrentText();
-                updateSentenceText('');
-                optionsContainer.innerHTML = '';
-                savedCaretRange = null;
-                stopAllListening();
+                document.getElementById('restore-btn').style.display = 'inline-block';
+                
+                updateSentenceText("");
+                
+                textHistory = []; // Reset undo history on clear
+                
+                statusText.innerText = "Cleared. Click restore if this was a mistake.";
                 clearModal.style.display = 'none';
-                restoreBtn.style.display = 'inline-block';
-                statusText.innerText = "Cleared. Use 'Restore' or 'Undo' if this was a mistake.";
+                localStorage.removeItem('saved_voice_writer_text');
             });
-            document.getElementById('cancel-clear-btn').addEventListener('click', () => { clearModal.style.display = 'none'; });
-            restoreBtn.addEventListener('click', () => {
-                if (backupText) {
-                    saveStateToHistory();
-                    updateSentenceText(backupText);
-                    restoreBtn.style.display = 'none';
-                    statusText.innerText = "Text restored!";
-                }
+            document.getElementById('cancel-clear-btn').addEventListener('click', () => {
+                clearModal.style.display = 'none';
+            });
+
+            document.getElementById('restore-btn').addEventListener('click', () => {
+                updateSentenceText(backupText);
+                statusText.innerText = "Restored!";
+                document.getElementById('restore-btn').style.display = 'none';
             });
 
             document.getElementById('read-sentence-btn').addEventListener('click', () => {
                 const text = getCurrentText();
                 if (text) {
-                    const wasAuto = isAutoListening;
-                    isAutoListening = false;
-                    try { recognition.stop(); } catch(e){}
-                    speakText(text, () => { if (wasAuto) { isAutoListening = true; safeStartListen(); } });
+                    const wasListening = isAutoListening;
+                    if (wasListening) stopAllListening();
+                    statusText.innerText = "Reading your sentence...";
+                    speakText(text, () => {
+                        statusText.innerText = "Finished reading.";
+                        if (wasListening) {
+                            isAutoListening = true;
+                            safeStartListen();
+                        }
+                    });
                 }
             });
 
@@ -819,58 +849,97 @@
             recognition.onstart = () => {
                 isListeningActive = true;
                 updateListeningUI();
-                setTimeout(() => { if (isListeningActive) statusText.innerText = "🔴 Listening... Speak now! 👂"; }, 150);
+                statusText.innerText = "Listening... Speak a short phrase!";
             };
 
-            recognition.onresult = (event) => {
-                const results = event.results[0];
-                optionsContainer.innerHTML = ''; 
-                phraseQueue = [];
-                let wordsByPosition = [];
-
-                for (let i = 0; i < results.length; i++) {
-                    let transcript = results[i].transcript.trim().toLowerCase().replace(/[.,!?]/g, '');
-                    let words = transcript.split(/\s+/).filter(w => w.length > 0);
-                    words.forEach((w, pos) => {
-                        if (!wordsByPosition[pos]) wordsByPosition[pos] = new Set();
-                        wordsByPosition[pos].add(w);
-                    });
-                }
-
-                phraseQueue = wordsByPosition.map(set => {
-                    let choices = Array.from(set);
-                    if (choices.length < 3) choices = generateApproximations(choices[0]);
-                    return choices.slice(0, 3);
-                }).filter(arr => arr.length > 0);
-
-                if (phraseQueue.length > 0) {
-                    processNextWordInQueue();
-                } else {
-                    statusText.innerText = "Didn't catch that. Trying again...";
-                    if (isAutoListening) restartTimer = setTimeout(safeStartListen, 500);
-                }
+            recognition.onspeechstart = () => {
+                isListeningActive = true;
             };
 
-            recognition.onerror = (event) => {
-                isListeningActive = false;
-                if (event.error === 'no-speech') {
-                    statusText.innerText = "No speech detected. Listening again...";
-                    if (isAutoListening) restartTimer = setTimeout(safeStartListen, 400);
-                } else if (event.error !== 'aborted') {
-                    statusText.innerText = "Mic status: " + event.error;
-                    if (isAutoListening) restartTimer = setTimeout(safeStartListen, 800);
-                }
+            recognition.onaudiostart = () => {
+                isListeningActive = true;
+            };
+
+            recognition.onsoundstart = () => {
+                isListeningActive = true;
             };
 
             recognition.onend = () => {
                 isListeningActive = false;
-                if (phraseQueue.length > 0) {
-                    processNextWordInQueue();
-                } else if (isAutoListening) {
-                    restartTimer = setTimeout(safeStartListen, 300);
-                } else {
+                if (isAutoListening && phraseQueue.length === 0) {
+                    statusText.innerText = "Processing...";
+                    restartTimer = setTimeout(safeStartListen, 400);
+                } else if (!isAutoListening) {
                     stopListeningUI();
                 }
+            };
+
+            recognition.onerror = (event) => {
+                console.warn("Recognition error:", event.error);
+                isListeningActive = false;
+                if (event.error === 'no-speech' && isAutoListening) {
+                    restartTimer = setTimeout(safeStartListen, 500);
+                } else {
+                    stopListeningUI();
+                    if (event.error !== 'aborted') {
+                        statusText.innerText = `Microphone error: ${event.error}. Please try again.`;
+                        isAutoListening = false;
+                    }
+                }
+            };
+
+            recognition.onresult = (event) => {
+                isListeningActive = false;
+                const resultCount = event.results.length;
+                if (resultCount === 0) return;
+                
+                const finalResult = event.results[resultCount - 1];
+                if (!finalResult.isFinal) return;
+
+                let bestPhrase = "";
+                if (finalResult.length > 0) {
+                    bestPhrase = finalResult[0].transcript.trim().toLowerCase();
+                } else {
+                    return; 
+                }
+
+                if (!bestPhrase) return;
+
+                const phraseWords = bestPhrase.split(/\s+/);
+                const isShortPhrase = phraseWords.length <= 4; 
+                phraseQueue = [];
+
+                if (isShortPhrase && finalResult.length > 1) {
+                    for (let i = 0; i < phraseWords.length; i++) {
+                        let wordOptions = new Set();
+                        
+                        for (let altIndex = 0; altIndex < finalResult.length; altIndex++) {
+                            const altTranscript = finalResult[altIndex].transcript.trim().toLowerCase();
+                            const altWords = altTranscript.split(/\s+/);
+                            if (altWords.length === phraseWords.length) {
+                                wordOptions.add(altWords[i]);
+                            }
+                        }
+                        
+                        if (wordOptions.size === 0) {
+                            wordOptions.add(phraseWords[i]);
+                        }
+                        
+                        let optionsArray = Array.from(wordOptions);
+                        if (optionsArray.length < 3) {
+                            const approx = generateApproximations(optionsArray[0]);
+                            approx.forEach(w => { if(optionsArray.length < 3 && !optionsArray.includes(w)) optionsArray.push(w); });
+                        }
+                        
+                        phraseQueue.push(optionsArray.slice(0,3));
+                    }
+                } else {
+                    phraseWords.forEach(word => {
+                        phraseQueue.push([word]); 
+                    });
+                }
+                
+                processNextWordInQueue();
             };
         }
     </script>
