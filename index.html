@@ -68,22 +68,11 @@
         }
 
         #listen-btn { background-color: #4CAF50; color: white; box-shadow: 0 4px #388E3C; font-weight: bold; }
-        #listen-btn:active { box-shadow: 0 0px #388E3C; }
-        
         #stop-btn { background-color: #e91e63; color: white; box-shadow: 0 4px #c2185b; font-weight: bold; }
-        #stop-btn:active { box-shadow: 0 0px #c2185b; }
-        
         .punct-btn { background-color: #FF9800; color: white; box-shadow: 0 4px #F57C00; }
-        .punct-btn:active { box-shadow: 0 0px #F57C00; }
-        
         .action-btn { background-color: #2196F3; color: white; box-shadow: 0 4px #1976D2; }
-        .action-btn:active { box-shadow: 0 0px #1976D2; }
-        
         #clear-btn { background-color: #f44336; color: white; box-shadow: 0 4px #d32f2f; }
-        #clear-btn:active { box-shadow: 0 0px #d32f2f; }
-        
         #read-sentence-btn { background-color: #9c27b0; color: white; box-shadow: 0 4px #7b1fa2; }
-        #read-sentence-btn:active { box-shadow: 0 0px #7b1fa2; }
         
         #options-container {
             display: flex;
@@ -106,7 +95,6 @@
             animation: popIn 0.3s ease-out;
             word-wrap: break-word;
         }
-        .option-btn:active { box-shadow: 0 0px #7b1fa2; }
 
         #status {
             font-size: clamp(16px, 2.5vw, 20px);
@@ -125,7 +113,7 @@
 
     <h1>🎙️ Voice Choice Writer ✍️</h1>
     
-    <!-- Top Controls -->
+    <!-- Controls Top -->
     <div class="controls-group">
         <button id="listen-btn">🎤 Start Listening</button>
         <button id="stop-btn">🛑 Stop Listening</button>
@@ -133,10 +121,10 @@
         <button id="period-btn" class="punct-btn">. Full Stop</button>
     </div>
 
-    <!-- The Sentence -->
+    <!-- Sentence Output -->
     <div id="sentence-box"></div>
     
-    <!-- Bottom Controls -->
+    <!-- Controls Bottom -->
     <div class="controls-group">
         <button id="read-sentence-btn">🔊 Read Sentence</button>
         <button id="copy-btn" class="action-btn">📋 Copy to Docs</button>
@@ -145,7 +133,6 @@
 
     <div id="status">Click "Start Listening" when ready!</div>
     
-    <!-- Choices appear here -->
     <div id="options-container"></div>
 
     <script>
@@ -175,13 +162,24 @@
             const optionsContainer = document.getElementById('options-container');
             const statusText = document.getElementById('status');
 
-            function triggerListen() {
-                if (isListeningActive) return;
+            function safeStartListen() {
+                if (!isAutoListening) return;
                 clearTimeout(restartTimer);
+
+                // If Text-to-Speech is speaking, wait for it to finish first!
+                if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+                    statusText.innerText = "Waiting for audio to finish...";
+                    restartTimer = setTimeout(safeStartListen, 300);
+                    return;
+                }
+
+                if (isListeningActive) return;
+
                 try {
                     recognition.start();
                 } catch (e) {
-                    restartTimer = setTimeout(triggerListen, 200);
+                    // Engine still resetting, try again in 300ms
+                    restartTimer = setTimeout(safeStartListen, 300);
                 }
             }
 
@@ -189,6 +187,9 @@
                 isAutoListening = false;
                 isListeningActive = false;
                 clearTimeout(restartTimer);
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
                 try {
                     recognition.stop();
                 } catch (e) {}
@@ -215,21 +216,27 @@
                 sentenceBox.textContent = text + mark + ' ';
             }
 
-            function speakWord(word) {
+            function speakText(text, callback) {
                 if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel();
-                    const utterance = new SpeechSynthesisUtterance(word);
-                    utterance.rate = 0.8; 
+                    window.speechSynthesis.cancel(); // Stop prior audio
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 0.85; 
+                    if (callback) {
+                        utterance.onend = callback;
+                        utterance.onerror = callback;
+                    }
                     window.speechSynthesis.speak(utterance);
+                } else if (callback) {
+                    callback();
                 }
             }
 
-            // --- LISTEN / STOP BUTTON CLICKS --- //
+            // --- BUTTON HANDLERS --- //
 
             listenBtn.addEventListener('click', () => {
                 optionsContainer.innerHTML = '';
                 isAutoListening = true;
-                triggerListen();
+                safeStartListen();
             });
 
             stopBtn.addEventListener('click', () => {
@@ -241,7 +248,7 @@
             commaBtn.addEventListener('click', () => {
                 addPunctuation(',');
                 if (isAutoListening) {
-                    restartTimer = setTimeout(triggerListen, 250);
+                    restartTimer = setTimeout(safeStartListen, 300);
                 }
             });
 
@@ -273,11 +280,21 @@
             readSentenceBtn.addEventListener('click', () => {
                 const text = sentenceBox.textContent.trim();
                 if (text) {
-                    speakWord(text);
+                    // Temporarily pause mic to read full sentence cleanly
+                    const wasAuto = isAutoListening;
+                    isAutoListening = false;
+                    try { recognition.stop(); } catch(e){}
+                    
+                    speakText(text, () => {
+                        if (wasAuto) {
+                            isAutoListening = true;
+                            safeStartListen();
+                        }
+                    });
                 }
             });
 
-            // --- SPEECH RECOGNITION LIFECYCLE --- //
+            // --- RECOGNITION EVENTS --- //
 
             recognition.onstart = () => {
                 isListeningActive = true;
@@ -303,7 +320,10 @@
                         btn.className = 'option-btn';
                         btn.innerText = word;
                         
-                        btn.onmouseenter = () => speakWord(word);
+                        btn.onmouseenter = () => {
+                            // Only speak on hover if mic is not actively recording
+                            if (!isListeningActive) speakText(word);
+                        };
 
                         btn.onclick = () => {
                             if (sentenceBox.textContent.length === 0 || sentenceBox.textContent.endsWith('. ')) {
@@ -314,8 +334,9 @@
                             optionsContainer.innerHTML = '';
                             
                             if (isAutoListening) {
-                                statusText.innerText = "Word added! Mic starting again...";
-                                restartTimer = setTimeout(triggerListen, 250);
+                                statusText.innerText = "Word added! Preparing mic...";
+                                // Give a small gap, then trigger mic safely
+                                restartTimer = setTimeout(safeStartListen, 400);
                             } else {
                                 statusText.innerText = "Word added.";
                             }
@@ -329,7 +350,7 @@
                 if (uniqueWords.size === 0) {
                     statusText.innerText = "Didn't catch that. Trying again...";
                     if (isAutoListening) {
-                        restartTimer = setTimeout(triggerListen, 500);
+                        restartTimer = setTimeout(safeStartListen, 600);
                     }
                 }
             };
@@ -337,21 +358,26 @@
             recognition.onerror = (event) => {
                 isListeningActive = false;
                 if (event.error === 'no-speech') {
-                    statusText.innerText = "No speech heard. Retrying mic...";
+                    statusText.innerText = "No speech detected. Listening again...";
                     if (isAutoListening) {
-                        restartTimer = setTimeout(triggerListen, 400);
+                        restartTimer = setTimeout(safeStartListen, 400);
                     }
                 } else if (event.error === 'aborted') {
-                    // Handled intentional stop
+                    // Intentionally stopped
                 } else {
-                    statusText.innerText = "Mic note: " + event.error;
-                    stopListeningUI();
+                    statusText.innerText = "Mic status: " + event.error;
+                    if (isAutoListening) {
+                        restartTimer = setTimeout(safeStartListen, 800);
+                    }
                 }
             };
 
             recognition.onend = () => {
                 isListeningActive = false;
-                if (!isAutoListening) {
+                if (isAutoListening) {
+                    // If recognition ended naturally, cue the next run safely
+                    restartTimer = setTimeout(safeStartListen, 300);
+                } else {
                     stopListeningUI();
                 }
             };
