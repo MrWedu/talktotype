@@ -11,7 +11,7 @@
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
             background-color: #e0f7fa;
             text-align: center;
-            padding: 10px 20px;
+            padding: 15px;
             margin: 0;
             color: #333;
             height: 100vh;
@@ -22,39 +22,67 @@
         
         h1 { 
             color: #00796b; 
-            margin: 8px 0;
+            margin: 0 0 10px 0;
             font-size: clamp(22px, 3.5vw, 30px);
+            flex-shrink: 0;
         }
-        
-        .controls-group {
+
+        /* Two-Column App Layout */
+        .app-container {
             display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin: 5px 0;
+            flex-direction: row;
+            gap: 20px;
+            flex-grow: 1;
+            height: calc(100% - 50px);
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Left Column: Scrollable Text Box */
+        .left-panel {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
 
         #sentence-box {
             background: white;
             border: 4px dashed #00bcd4;
             border-radius: 15px;
-            flex-grow: 1;
+            height: 100%;
             padding: 20px;
-            font-size: clamp(24px, 4vw, 36px);
-            margin: 8px auto;
-            width: 100%;
-            max-width: 900px;
+            font-size: clamp(22px, 3.5vw, 32px);
             text-align: left;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             line-height: 1.5;
-            overflow-y: auto;
+            overflow-y: auto; /* Scrollable when long */
             white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        /* Right Column: Controls and Options */
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+            justify-content: flex-start;
+        }
+
+        .controls-group {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         button {
             font-family: inherit;
-            font-size: clamp(16px, 2.5vw, 22px);
-            padding: 10px 20px;
+            font-size: clamp(16px, 2vw, 20px);
+            padding: 10px 16px;
             border-radius: 12px;
             border: none;
             cursor: pointer;
@@ -69,43 +97,69 @@
 
         #listen-btn { background-color: #4CAF50; color: white; box-shadow: 0 4px #388E3C; font-weight: bold; }
         #stop-btn { background-color: #e91e63; color: white; box-shadow: 0 4px #c2185b; font-weight: bold; }
-        .punct-btn { background-color: #FF9800; color: white; box-shadow: 0 4px #F57C00; }
+        
+        /* Compact Punctuation Styling */
+        .punct-btn { 
+            background-color: #FF9800; 
+            color: white; 
+            box-shadow: 0 4px #F57C00; 
+            font-size: 22px;
+            font-weight: bold;
+            min-width: 48px;
+        }
+        
         .action-btn { background-color: #2196F3; color: white; box-shadow: 0 4px #1976D2; }
         #clear-btn { background-color: #f44336; color: white; box-shadow: 0 4px #d32f2f; }
         #read-sentence-btn { background-color: #9c27b0; color: white; box-shadow: 0 4px #7b1fa2; }
         
+        /* Options stack vertically or wrap neatly on the right */
         #options-container {
             display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+            flex-grow: 1;
             justify-content: center;
-            align-items: center;
-            gap: 15px;
-            min-height: 90px;
-            margin: 8px 0;
-            flex-wrap: nowrap;
         }
 
         .option-btn {
             background-color: #9c27b0;
             color: white;
             box-shadow: 0 4px #7b1fa2;
-            font-size: clamp(20px, 4vw, 32px);
-            padding: 15px 25px;
-            flex: 1;
-            max-width: 32%;
+            font-size: clamp(22px, 3.5vw, 32px);
+            padding: 15px;
+            width: 100%;
             animation: popIn 0.3s ease-out;
             word-wrap: break-word;
         }
 
         #status {
-            font-size: clamp(16px, 2.5vw, 20px);
+            font-size: clamp(16px, 2vw, 19px);
             color: #555;
             font-weight: bold;
             min-height: 28px;
+            margin: 5px 0;
         }
 
         @keyframes popIn {
-            0% { transform: scale(0); opacity: 0; }
+            0% { transform: scale(0.8); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Stack vertically if viewed on small mobile screens */
+        @media (max-width: 650px) {
+            .app-container {
+                flex-direction: column;
+            }
+            .left-panel {
+                height: 40%;
+            }
+            #options-container {
+                flex-direction: row;
+            }
+            .option-btn {
+                flex: 1;
+            }
         }
     </style>
 </head>
@@ -113,27 +167,41 @@
 
     <h1>🎙️ Voice Choice Writer ✍️</h1>
     
-    <!-- Controls Top -->
-    <div class="controls-group">
-        <button id="listen-btn">🎤 Start Listening</button>
-        <button id="stop-btn">🛑 Stop Listening</button>
-        <button id="comma-btn" class="punct-btn">, Comma</button>
-        <button id="period-btn" class="punct-btn">. Full Stop</button>
-    </div>
+    <div class="app-container">
+        <!-- LEFT: Scrollable Sentence Box -->
+        <div class="left-panel">
+            <div id="sentence-box"></div>
+        </div>
 
-    <!-- Sentence Output -->
-    <div id="sentence-box"></div>
-    
-    <!-- Controls Bottom -->
-    <div class="controls-group">
-        <button id="read-sentence-btn">🔊 Read Sentence</button>
-        <button id="copy-btn" class="action-btn">📋 Copy to Docs</button>
-        <button id="clear-btn">🗑️ Clear</button>
-    </div>
+        <!-- RIGHT: Controls and Choices -->
+        <div class="right-panel">
+            <!-- Listening Controls -->
+            <div class="controls-group">
+                <button id="listen-btn">🎤 Start Listening</button>
+                <button id="stop-btn">🛑 Stop Listening</button>
+            </div>
 
-    <div id="status">Click "Start Listening" when ready!</div>
-    
-    <div id="options-container"></div>
+            <!-- Clean Punctuation Buttons -->
+            <div class="controls-group">
+                <button id="comma-btn" class="punct-btn">,</button>
+                <button id="period-btn" class="punct-btn">.</button>
+                <button id="question-btn" class="punct-btn">?</button>
+                <button id="exclamation-btn" class="punct-btn">!</button>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="controls-group">
+                <button id="read-sentence-btn">🔊 Read Sentence</button>
+                <button id="copy-btn" class="action-btn">📋 Copy to Docs</button>
+                <button id="clear-btn">🗑️ Clear</button>
+            </div>
+
+            <div id="status">Click "Start Listening" when ready!</div>
+            
+            <!-- Word Choices Output -->
+            <div id="options-container"></div>
+        </div>
+    </div>
 
     <script>
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -155,6 +223,8 @@
             const stopBtn = document.getElementById('stop-btn');
             const commaBtn = document.getElementById('comma-btn');
             const periodBtn = document.getElementById('period-btn');
+            const questionBtn = document.getElementById('question-btn');
+            const exclamationBtn = document.getElementById('exclamation-btn');
             const copyBtn = document.getElementById('copy-btn');
             const clearBtn = document.getElementById('clear-btn');
             const readSentenceBtn = document.getElementById('read-sentence-btn');
@@ -166,7 +236,6 @@
                 if (!isAutoListening) return;
                 clearTimeout(restartTimer);
 
-                // If Text-to-Speech is speaking, wait for it to finish first!
                 if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
                     statusText.innerText = "Waiting for audio to finish...";
                     restartTimer = setTimeout(safeStartListen, 300);
@@ -178,7 +247,6 @@
                 try {
                     recognition.start();
                 } catch (e) {
-                    // Engine still resetting, try again in 300ms
                     restartTimer = setTimeout(safeStartListen, 300);
                 }
             }
@@ -214,11 +282,12 @@
                     text = text.slice(0, -1);
                 }
                 sentenceBox.textContent = text + mark + ' ';
+                sentenceBox.scrollTop = sentenceBox.scrollHeight; // Auto-scroll to bottom
             }
 
             function speakText(text, callback) {
                 if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel(); // Stop prior audio
+                    window.speechSynthesis.cancel();
                     const utterance = new SpeechSynthesisUtterance(text);
                     utterance.rate = 0.85; 
                     if (callback) {
@@ -247,16 +316,22 @@
 
             commaBtn.addEventListener('click', () => {
                 addPunctuation(',');
-                if (isAutoListening) {
-                    restartTimer = setTimeout(safeStartListen, 300);
-                }
+                if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300);
             });
 
             periodBtn.addEventListener('click', () => {
                 addPunctuation('.');
-                stopAllListening();
-                statusText.innerText = "Sentence complete! Ready for a new one.";
-                optionsContainer.innerHTML = '';
+                if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300);
+            });
+
+            questionBtn.addEventListener('click', () => {
+                addPunctuation('?');
+                if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300);
+            });
+
+            exclamationBtn.addEventListener('click', () => {
+                addPunctuation('!');
+                if (isAutoListening) restartTimer = setTimeout(safeStartListen, 300);
             });
 
             copyBtn.addEventListener('click', () => {
@@ -280,7 +355,6 @@
             readSentenceBtn.addEventListener('click', () => {
                 const text = sentenceBox.textContent.trim();
                 if (text) {
-                    // Temporarily pause mic to read full sentence cleanly
                     const wasAuto = isAutoListening;
                     isAutoListening = false;
                     try { recognition.stop(); } catch(e){}
@@ -321,21 +395,22 @@
                         btn.innerText = word;
                         
                         btn.onmouseenter = () => {
-                            // Only speak on hover if mic is not actively recording
                             if (!isListeningActive) speakText(word);
                         };
 
                         btn.onclick = () => {
-                            if (sentenceBox.textContent.length === 0 || sentenceBox.textContent.endsWith('. ')) {
+                            // Capitalize if box is empty or previous sentence ended with . ? or !
+                            const currentText = sentenceBox.textContent;
+                            if (currentText.length === 0 || /[.!?]\s*$/.test(currentText)) {
                                 word = word.charAt(0).toUpperCase() + word.slice(1);
                             }
                             
                             sentenceBox.textContent += word + ' ';
+                            sentenceBox.scrollTop = sentenceBox.scrollHeight; // Keep view focused on newest word
                             optionsContainer.innerHTML = '';
                             
                             if (isAutoListening) {
                                 statusText.innerText = "Word added! Preparing mic...";
-                                // Give a small gap, then trigger mic safely
                                 restartTimer = setTimeout(safeStartListen, 400);
                             } else {
                                 statusText.innerText = "Word added.";
@@ -375,7 +450,6 @@
             recognition.onend = () => {
                 isListeningActive = false;
                 if (isAutoListening) {
-                    // If recognition ended naturally, cue the next run safely
                     restartTimer = setTimeout(safeStartListen, 300);
                 } else {
                     stopListeningUI();
