@@ -144,6 +144,16 @@
             border-color: #fbc02d;
         }
 
+        /* NEW: Capitalization Error Styles (Pink Highlight) */
+        .child-word.capital-error {
+            background-color: #fce4ec;
+            border-color: #f48fb1;
+        }
+        .child-word.capital-error:hover {
+            background-color: #f8bbd0;
+            border-color: #f06292;
+        }
+
         /* SEPARATE PUNCTUATION SPAN STYLING */
         .child-punct {
             display: inline-block;
@@ -297,6 +307,17 @@
         body.high-contrast .child-gap { background-color: #333; }
         body.high-contrast .child-gap:hover { background-color: #555; }
         body.high-contrast .child-word:hover { background-color: #333; border-color: #ffeb3b; }
+        
+        /* High contrast pink highlight */
+        body.high-contrast .child-word.capital-error {
+            background-color: #5c0029;
+            border-color: #ff80ab;
+        }
+        body.high-contrast .child-word.capital-error:hover {
+            background-color: #880e4f;
+            border-color: #ff80ab;
+        }
+
         body.high-contrast .child-punct {
             color: #ffffff;
             background-color: #333;
@@ -572,6 +593,7 @@
                 el.classList.add('active-child-target');
             }
 
+            // Renders spans & checks for Capitalization Errors
             function renderChildSpans(text) {
                 let cleanText = text.replace(/\s+/g, ' ').trim();
                 const tokens = cleanText.match(/[a-zA-Z0-9'’]+|[.,!?"']/g) || [];
@@ -579,12 +601,47 @@
                 sentenceBox.innerHTML = '';
                 sentenceBox.appendChild(createGapSpan()); 
                 
+                let capNext = true; // Very first word should be capitalized
+                
                 tokens.forEach(token => {
                     const isPunct = /^[.,!?"']$/.test(token);
                     const span = document.createElement('span');
-                    span.className = isPunct ? 'child-punct' : 'child-word';
-                    span.innerText = token;
                     
+                    if (isPunct) {
+                        span.className = 'child-punct';
+                        if (/[.!?]/.test(token)) {
+                            capNext = true; // Next word after ending punctuation should be capitalized
+                        }
+                    } else {
+                        span.className = 'child-word';
+                        
+                        let firstChar = token.charAt(0);
+                        let isLetter = /[a-zA-Z]/.test(firstChar);
+                        let isCapitalized = (firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase());
+                        
+                        // Check if word is I, I'm, I've, I'll, etc.
+                        let isI = /^i(['’][a-z]+)?$/i.test(token);
+                        
+                        // Error checking logic
+                        if (isLetter) {
+                            let hasError = false;
+                            if (capNext || isI) {
+                                // Should be capitalized, but isn't
+                                if (!isCapitalized) hasError = true;
+                            } else {
+                                // Shouldn't be capitalized, but is
+                                if (isCapitalized) hasError = true;
+                            }
+                            
+                            if (hasError) {
+                                span.classList.add('capital-error');
+                            }
+                        }
+                        
+                        capNext = false; // Reset rule after a word is processed
+                    }
+                    
+                    span.innerText = token;
                     span.onclick = () => setActiveTarget(span);
                     
                     if (!isPunct) {
@@ -623,6 +680,30 @@
                     fallbackIdx++;
                 }
                 return Array.from(choices).slice(0, 3);
+            }
+
+            // Check if the next word generated should be capitalized automatically
+            function shouldCapitalizeNext() {
+                if (isEditMode) {
+                    let activeEl = document.querySelector('.active-child-target');
+                    if (activeEl) {
+                        let prev = activeEl.previousElementSibling;
+                        // Look backwards past any gaps
+                        while (prev && prev.classList.contains('child-gap')) {
+                            prev = prev.previousElementSibling;
+                        }
+                        if (!prev) return true; // Start of text
+                        if (prev.classList.contains('child-punct') && /[.!?]/.test(prev.innerText)) {
+                            return true; // After ending punctuation
+                        }
+                        return false;
+                    }
+                }
+                
+                let text = getCurrentText().trim();
+                if (text.length === 0) return true; // Start of text
+                let lastChar = text.slice(-1);
+                return /[.!?]/.test(lastChar); // After ending punctuation
             }
 
             contrastToggleBtn.addEventListener('click', () => {
@@ -795,7 +876,6 @@
                 }
             }
 
-            // --- RESTORED WORD-BY-WORD RESULT HANDLING ---
             recognition.onresult = (event) => {
                 const resultCount = event.results.length;
                 if (resultCount === 0) return;
@@ -804,14 +884,14 @@
                 let bestPhrase = alternatives[0].transcript.trim().toLowerCase();
                 if (!bestPhrase) return;
 
-                // Split into single words
                 const phraseWords = bestPhrase.split(/\s+/);
                 phraseQueue = [];
+                
+                let capNext = shouldCapitalizeNext();
                 
                 for (let i = 0; i < phraseWords.length; i++) {
                     let wordOptions = new Set();
                     
-                    // Look through Google's alternative phrase guesses for the word at position [i]
                     for (let altIndex = 0; altIndex < alternatives.length; altIndex++) {
                         const altTranscript = alternatives[altIndex].transcript.trim().toLowerCase();
                         const altWords = altTranscript.split(/\s+/);
@@ -826,7 +906,6 @@
                     
                     let optionsArray = Array.from(wordOptions);
                     
-                    // If we don't have 3 options from Google, generate phonetic approximations
                     if (optionsArray.length < 3) {
                         const approx = generateApproximations(optionsArray[0]);
                         approx.forEach(w => { 
@@ -836,7 +915,11 @@
                         });
                     }
                     
-                    // Push max 3 options to the queue for this word
+                    // Smart Capitalization: Only capitalize the VERY FIRST word, and ONLY if the logic says it should
+                    if (i === 0 && capNext) {
+                        optionsArray = optionsArray.map(w => w.charAt(0).toUpperCase() + w.slice(1));
+                    }
+                    
                     phraseQueue.push(optionsArray.slice(0,3));
                 }
 
@@ -870,13 +953,12 @@
                     optionsContainer.appendChild(btn);
                 });
 
-                // NEW: Cancel / Clear Options button
                 const cancelBtn = document.createElement('button');
                 cancelBtn.className = 'option-btn cancel-option-btn';
                 cancelBtn.innerText = "❌ None (Try Again)";
                 cancelBtn.onclick = () => {
                     optionsContainer.innerHTML = '';
-                    phraseQueue = []; // Empty the queue
+                    phraseQueue = []; 
                     statusText.innerText = "Options cleared. Say the word again!";
                 };
                 optionsContainer.appendChild(cancelBtn);
@@ -999,6 +1081,17 @@
             document.getElementById('question-btn').addEventListener('click', () => addPunctuation('?'));
             document.getElementById('exclamation-btn').addEventListener('click', () => addPunctuation('!'));
             document.getElementById('quote-btn').addEventListener('click', () => addPunctuation('"'));
+
+            // Keydown listener for punctuation shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (isTeacherMode) return; 
+                
+                const validPunctuation = [',', '.', '?', '!', '"'];
+                if (validPunctuation.includes(e.key)) {
+                    e.preventDefault(); 
+                    addPunctuation(e.key);
+                }
+            });
 
             document.getElementById('undo-action-btn').addEventListener('click', () => {
                 if (textHistory.length > 0) {
