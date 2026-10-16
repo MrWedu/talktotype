@@ -231,6 +231,7 @@
         #undo-action-btn { background-color: #f57c00; color: #ffffff; box-shadow: 0 3px #e65100; font-weight: bold; flex: 1;}
         #delete-btn { background-color: #e53935; color: #ffffff; box-shadow: 0 3px #b71c1c; font-weight: bold; flex: 1;}
         #capitalize-btn { background-color: #43a047; color: #ffffff; box-shadow: 0 3px #1b5e20; font-weight: bold; flex: 1; display: none; }
+        #hover-read-toggle-btn { background-color: #00acc1; color: #ffffff; box-shadow: 0 3px #00838f; font-weight: bold; flex: 1; }
         #clear-btn { background-color: #424242; color: #ffffff; box-shadow: 0 3px #212121; flex: 1;}
         #restore-btn { background-color: #00897b; color: #ffffff; box-shadow: 0 3px #004d40; font-weight: bold; display: none; flex: 1;}
         #read-sentence-btn { background-color: #6a1b9a; color: #ffffff; box-shadow: 0 3px #4a148c; flex: 1;}
@@ -419,6 +420,7 @@
 
             <div class="controls-group">
                 <button id="read-sentence-btn">🔊 Read</button>
+                <button id="hover-read-toggle-btn">🗣️ Hover Read: OFF</button>
                 <button id="copy-btn" class="action-btn">📋 Copy</button>
                 <button id="print-btn">🖨️ Print</button>
                 <button id="clear-btn">🗑️ Clear</button>
@@ -464,16 +466,40 @@
         let isEditMode = false; // Child Edit Mode
         let isTeacherMode = false;
         let isHighContrast = false;
+        let isHoverReadOn = false; // New toggle for hover reading
 
         let restartTimer = null;
         let audioCtx = null;
         
         let phraseQueue = [];
         let backupText = ""; 
-        let savedCaretRange = null;
+        let textHistory = []; // History for the Undo feature
+
+        // --- NATURAL TTS VOICE SETUP --- //
+        let bestVoice = null;
+        function loadBestVoice() {
+            let voices = window.speechSynthesis.getVoices();
+            if (!voices.length) return;
+            // Look for high quality/natural sounding voices first
+            bestVoice = voices.find(v => v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Google')) 
+                     || voices.find(v => v.lang === 'en-GB' || v.lang === 'en-US') 
+                     || voices[0];
+        }
+        // Voices load asynchronously in some browsers
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadBestVoice;
+        }
         
-        // History for the Undo feature
-        let textHistory = [];
+        // Helper function for more natural speaking
+        function speakTextNaturally(text, rate = 0.9) {
+            if (!text) return;
+            window.speechSynthesis.cancel(); // Stop anything currently playing
+            let utterance = new SpeechSynthesisUtterance(text);
+            if (bestVoice) utterance.voice = bestVoice;
+            utterance.rate = rate; // Slightly slower for clarity
+            utterance.pitch = 1.05; // Very slight pitch up for a friendlier tone
+            window.speechSynthesis.speak(utterance);
+        }
 
         const sentenceBox = document.getElementById('sentence-box');
         const statusText = document.getElementById('status');
@@ -483,6 +509,7 @@
         const teacherToggleBtn = document.getElementById('teacher-toggle-btn');
         const contrastToggleBtn = document.getElementById('contrast-toggle-btn');
         const capitalizeBtn = document.getElementById('capitalize-btn');
+        const hoverReadToggleBtn = document.getElementById('hover-read-toggle-btn');
 
         if (!SpeechRecognition) {
             statusText.innerText = "Oops! Your browser doesn't support voice typing. Try Google Chrome!";
@@ -521,9 +548,7 @@
             // --- UNDO HISTORY HELPER --- //
             function saveStateToHistory() {
                 textHistory.push(getCurrentText());
-                if (textHistory.length > 30) {
-                    textHistory.shift(); 
-                }
+                if (textHistory.length > 30) { textHistory.shift(); }
             }
 
             // --- CHILD EDIT MODE SPANS LOGIC --- //
@@ -543,7 +568,6 @@
             // Renders words, gaps AND punctuation separately
             function renderChildSpans(text) {
                 let cleanText = text.replace(/\s+/g, ' ').trim();
-                // Tokenize words and punctuation individually
                 const tokens = cleanText.match(/[a-zA-Z0-9'’]+|[.,!?"']/g) || [];
                 
                 sentenceBox.innerHTML = '';
@@ -554,9 +578,19 @@
                     const span = document.createElement('span');
                     span.className = isPunct ? 'child-punct' : 'child-word';
                     span.innerText = token;
-                    span.onclick = () => setActiveTarget(span);
-                    sentenceBox.appendChild(span);
                     
+                    span.onclick = () => setActiveTarget(span);
+                    
+                    // Add Hover to Read listener
+                    if (!isPunct) {
+                        span.addEventListener('mouseenter', () => {
+                            if (isHoverReadOn && isEditMode) {
+                                speakTextNaturally(token, 0.85); // Speak the individual word
+                            }
+                        });
+                    }
+
+                    sentenceBox.appendChild(span);
                     sentenceBox.appendChild(createGapSpan()); 
                 });
             }
@@ -565,6 +599,21 @@
             contrastToggleBtn.addEventListener('click', () => {
                 isHighContrast = !isHighContrast;
                 document.body.classList.toggle('high-contrast', isHighContrast);
+            });
+
+            hoverReadToggleBtn.addEventListener('click', () => {
+                isHoverReadOn = !isHoverReadOn;
+                if (isHoverReadOn) {
+                    hoverReadToggleBtn.innerText = "🗣️ Hover Read: ON";
+                    hoverReadToggleBtn.style.backgroundColor = "#ff9800";
+                    hoverReadToggleBtn.style.color = "#000";
+                    statusText.innerText = "Hover Read ON: Move your mouse over words in Edit Mode!";
+                } else {
+                    hoverReadToggleBtn.innerText = "🗣️ Hover Read: OFF";
+                    hoverReadToggleBtn.style.backgroundColor = "#00acc1";
+                    hoverReadToggleBtn.style.color = "#fff";
+                    statusText.innerText = "Hover Read OFF.";
+                }
             });
 
             function updateModes() {
@@ -582,7 +631,7 @@
                     editToggleBtn.innerText = "✏️ Edit Mode: OFF";
                     editToggleBtn.style.backgroundColor = "#00796b";
                     
-                    capitalizeBtn.style.display = 'none'; // Hide capitalize button
+                    capitalizeBtn.style.display = 'none'; 
                     
                     statusText.innerText = "Teacher Mode ON: Keyboard unlocked.";
                     sentenceBox.focus();
@@ -597,7 +646,7 @@
                     teacherToggleBtn.innerText = "👩‍🏫 Teacher Mode: OFF";
                     teacherToggleBtn.style.backgroundColor = "#00796b";
                     
-                    capitalizeBtn.style.display = 'block'; // Show capitalize button in Edit Mode
+                    capitalizeBtn.style.display = 'block'; 
                     
                     statusText.innerText = "Edit Mode ON: Tap a word, punctuation, or gap!";
                 } else {
@@ -674,20 +723,14 @@
             function startListeningCycle() {
                 isAutoListening = true;
                 if (!isListeningActive) {
-                    try {
-                        recognition.start();
-                    } catch (e) {
-                        console.error("Recognition start error:", e);
-                    }
+                    try { recognition.start(); } catch (e) { console.error(e); }
                 }
             }
 
             function stopListeningCycle() {
                 isAutoListening = false;
                 clearTimeout(restartTimer);
-                try {
-                    recognition.stop();
-                } catch (e) {}
+                try { recognition.stop(); } catch (e) {}
             }
 
             recognition.onstart = () => {
@@ -699,9 +742,7 @@
             recognition.onerror = (event) => {
                 if (event.error === 'no-speech') {
                     statusText.innerText = "Didn't hear anything. Try again.";
-                } else if (event.error === 'aborted') {
-                    // Ignore manual aborts
-                } else {
+                } else if (event.error !== 'aborted') {
                     statusText.innerText = "Microphone error: " + event.error;
                 }
                 isListeningActive = false;
@@ -786,18 +827,24 @@
                                 wSpan.className = 'child-word';
                                 wSpan.innerText = w;
                                 wSpan.onclick = () => setActiveTarget(wSpan);
+                                wSpan.addEventListener('mouseenter', () => {
+                                    if (isHoverReadOn && isEditMode) speakTextNaturally(w, 0.85);
+                                });
                                 
                                 let newGap = createGapSpan();
-                                
                                 sentenceBox.insertBefore(wSpan, nextEl);
                                 sentenceBox.insertBefore(newGap, nextEl);
                             });
                             activeEl.classList.remove('active-child-target');
                         } else if (activeEl.classList.contains('child-word') || activeEl.classList.contains('child-punct')) {
-                            // Replace word or punctuation
                             activeEl.className = 'child-word';
                             activeEl.innerText = newWords;
                             activeEl.classList.remove('active-child-target');
+                            
+                            // Ensure the event listener exists if changing from punct back to word
+                            activeEl.addEventListener('mouseenter', () => {
+                                if (isHoverReadOn && isEditMode) speakTextNaturally(newWords, 0.85);
+                            });
                         }
                         renderChildSpans(getCurrentText());
                         return;
@@ -808,25 +855,19 @@
                     if (selection.rangeCount > 0 && sentenceBox.contains(selection.anchorNode)) {
                         let range = selection.getRangeAt(0);
                         range.deleteContents();
-                        
                         let textNode = document.createTextNode(" " + newWords);
                         range.insertNode(textNode);
-                        
                         range.setStartAfter(textNode);
                         range.setEndAfter(textNode);
                         selection.removeAllRanges();
                         selection.addRange(range);
-                        
                         localStorage.setItem('saved_voice_writer_text', getCurrentText());
                         return;
                     }
                 }
                 
-                // Default Append
                 let currentText = getCurrentText();
-                if (currentText.length > 0 && !currentText.endsWith(' ')) {
-                    currentText += " ";
-                }
+                if (currentText.length > 0 && !currentText.endsWith(' ')) { currentText += " "; }
                 currentText += newWords;
                 updateSentenceText(currentText);
             }
@@ -838,14 +879,11 @@
                     let activeEl = document.querySelector('.active-child-target');
                     if (activeEl) {
                         if (activeEl.classList.contains('child-punct')) {
-                            // Replace punctuation directly!
                             activeEl.innerText = mark;
                             activeEl.classList.remove('active-child-target');
                             renderChildSpans(getCurrentText());
-                            statusText.innerText = "Punctuation changed!";
                             return;
                         } else if (activeEl.classList.contains('child-word')) {
-                            // Append punctuation right after the word
                             let pSpan = document.createElement('span');
                             pSpan.className = 'child-punct';
                             pSpan.innerText = mark;
@@ -853,13 +891,10 @@
                             
                             let nextGap = activeEl.nextSibling;
                             sentenceBox.insertBefore(pSpan, nextGap);
-                            
                             activeEl.classList.remove('active-child-target');
                             renderChildSpans(getCurrentText());
-                            statusText.innerText = "Punctuation added!";
                             return;
                         } else if (activeEl.classList.contains('child-gap')) {
-                            // Insert punctuation in gap
                             let pSpan = document.createElement('span');
                             pSpan.className = 'child-punct';
                             pSpan.innerText = mark;
@@ -868,7 +903,6 @@
                             sentenceBox.insertBefore(pSpan, activeEl);
                             activeEl.classList.remove('active-child-target');
                             renderChildSpans(getCurrentText());
-                            statusText.innerText = "Punctuation added!";
                             return;
                         }
                     }
@@ -889,7 +923,6 @@
                     }
                 }
 
-                // Default Append
                 let currentText = getCurrentText();
                 currentText = currentText.trimEnd() + mark;
                 updateSentenceText(currentText);
@@ -946,7 +979,7 @@
                 }
             });
 
-            // Capitalize Action (Toggle logic)
+            // Capitalize Action
             capitalizeBtn.addEventListener('click', () => {
                 if (isEditMode) {
                     let activeEl = document.querySelector('.active-child-target');
@@ -957,10 +990,8 @@
                         
                         if (firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase()) {
                             activeEl.innerText = firstChar.toLowerCase() + text.slice(1);
-                            statusText.innerText = "Un-capitalized word.";
                         } else {
                             activeEl.innerText = firstChar.toUpperCase() + text.slice(1);
-                            statusText.innerText = "Capitalized word.";
                         }
                         renderChildSpans(getCurrentText());
                     } else {
@@ -969,7 +1000,7 @@
                 }
             });
 
-            // --- READ ALOUD --- //
+            // --- READ ALOUD (Whole Sentence) --- //
             document.getElementById('read-sentence-btn').addEventListener('click', () => {
                 let currentText = getCurrentText();
                 if (currentText === "") {
@@ -977,18 +1008,9 @@
                     return;
                 }
                 stopListeningCycle(); 
-                
-                let utterance = new SpeechSynthesisUtterance(currentText);
-                utterance.rate = 0.85; 
-                utterance.lang = 'en-GB';
-                
-                utterance.onend = () => {
-                    statusText.innerText = "Finished reading.";
-                };
-                
-                speechSynthesis.cancel(); 
-                speechSynthesis.speak(utterance);
                 statusText.innerText = "🔊 Reading...";
+                loadBestVoice(); // Ensure we have the best voice right before speaking
+                speakTextNaturally(currentText, 0.85); 
             });
 
             // --- COPY, PRINT, CLEAR, RESTORE --- //
@@ -1008,13 +1030,8 @@
             const clearModal = document.getElementById('clear-modal');
             const restoreBtn = document.getElementById('restore-btn');
 
-            document.getElementById('clear-btn').addEventListener('click', () => {
-                clearModal.style.display = 'flex'; 
-            });
-
-            document.getElementById('cancel-clear-btn').addEventListener('click', () => {
-                clearModal.style.display = 'none'; 
-            });
+            document.getElementById('clear-btn').addEventListener('click', () => { clearModal.style.display = 'flex'; });
+            document.getElementById('cancel-clear-btn').addEventListener('click', () => { clearModal.style.display = 'none'; });
 
             document.getElementById('confirm-clear-btn').addEventListener('click', () => {
                 let currentText = getCurrentText();
@@ -1040,6 +1057,9 @@
                     backupText = ""; 
                 }
             });
+            
+            // Load voice pool on startup
+            loadBestVoice();
         }
     </script>
 </body>
