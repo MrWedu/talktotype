@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Voice Choice Writer</title>
     <style>
-        /* Import Lexend font, designed specifically to improve reading fluency and accessibility */
         @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;600&display=swap');
+
+        :root {
+            --box-bg: #ffffff;
+        }
 
         * { box-sizing: border-box; }
         
@@ -31,7 +34,6 @@
             flex-shrink: 0;
         }
 
-        /* High Contrast Toggle - Top Right Corner */
         #contrast-toggle-btn {
             position: absolute;
             top: 12px;
@@ -84,6 +86,47 @@
             flex-wrap: wrap;
         }
 
+        .color-tint-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            background: #e0f2f1;
+            padding: 6px 12px;
+            border-radius: 10px;
+            border: 2px solid #00796b;
+            flex-wrap: wrap;
+        }
+
+        .tint-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #00796b;
+            margin-right: 4px;
+        }
+
+        .swatch-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid #888;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 2px #666;
+            padding: 0;
+        }
+
+        .swatch-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 0px #666;
+        }
+
+        .swatch-btn.active-swatch {
+            border: 3px solid #000;
+            transform: scale(1.15);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
         .mode-btn {
             background-color: #00796b;
             color: white;
@@ -95,7 +138,7 @@
         }
 
         #sentence-box {
-            background: white;
+            background-color: var(--box-bg) !important;
             border: 4px dashed #00bcd4;
             border-radius: 15px;
             flex-grow: 1;
@@ -111,10 +154,8 @@
             transition: all 0.3s ease;
         }
 
-        /* CHILD EDIT MODE STYLES */
         #sentence-box.child-edit-active {
             border: 4px solid #ff9800 !important;
-            background-color: #fff8e1 !important;
             white-space: normal;
         }
         
@@ -123,13 +164,13 @@
             width: 20px;
             height: 28px;
             margin: 0 2px;
-            background-color: #e0f2f1;
+            background-color: rgba(0, 0, 0, 0.05);
             border-radius: 4px;
             cursor: pointer;
             vertical-align: middle;
             transition: background 0.2s;
         }
-        .child-gap:hover { background-color: #b2dfdb; }
+        .child-gap:hover { background-color: rgba(0, 0, 0, 0.15); }
         
         .child-word {
             display: inline-block;
@@ -140,21 +181,20 @@
             transition: all 0.2s;
         }
         .child-word:hover {
-            background-color: #fff9c4;
+            background-color: rgba(255, 235, 59, 0.6);
             border-color: #fbc02d;
         }
 
-        /* NEW: Capitalization Error Styles (Pink Highlight) */
         .child-word.capital-error {
             background-color: #fce4ec;
             border-color: #f48fb1;
+            color: #000;
         }
         .child-word.capital-error:hover {
             background-color: #f8bbd0;
             border-color: #f06292;
         }
 
-        /* SEPARATE PUNCTUATION SPAN STYLING */
         .child-punct {
             display: inline-block;
             padding: 2px 6px;
@@ -163,13 +203,13 @@
             cursor: pointer;
             font-weight: 900;
             color: #222222;
-            background-color: #e0f2f1;
+            background-color: rgba(0, 0, 0, 0.05);
             border: 2px solid transparent;
             vertical-align: middle;
             transition: all 0.2s;
         }
         .child-punct:hover {
-            background-color: #b2dfdb;
+            background-color: rgba(0, 0, 0, 0.15);
         }
 
         .active-child-target {
@@ -181,10 +221,8 @@
             z-index: 10;
         }
 
-        /* TEACHER MODE STYLES */
         #sentence-box.teacher-edit-active {
             border: 4px solid #9c27b0 !important;
-            background-color: #f3e5f5 !important;
         }
 
         .right-panel {
@@ -283,56 +321,30 @@
             transition: color 0.3s;
         }
 
-        /* HIGH CONTRAST MODE STYLES */
-        body.high-contrast {
-            background-color: #121212;
-            color: #ffffff;
-        }
+        body.high-contrast { background-color: #121212; color: #ffffff; }
         body.high-contrast h1 { color: #ffeb3b; }
         body.high-contrast #status { color: #00e5ff; }
-        body.high-contrast .edit-header { background: #000000; border-color: #ffeb3b; }
+        body.high-contrast .edit-header, body.high-contrast .color-tint-bar { background: #000000; border-color: #ffeb3b; }
+        
         body.high-contrast #sentence-box {
-            background-color: #1e1e1e;
+            background-color: #1e1e1e !important;
             color: #ffffff;
             border: 4px solid #ffeb3b;
         }
-        body.high-contrast #sentence-box.child-edit-active {
-            background-color: #000000 !important;
-            border: 4px solid #00e5ff !important;
-        }
-        body.high-contrast #sentence-box.teacher-edit-active {
-            background-color: #000000 !important;
-            border: 4px solid #ff5252 !important;
-        }
+        body.high-contrast #sentence-box.child-edit-active { border: 4px solid #00e5ff !important; }
+        body.high-contrast #sentence-box.teacher-edit-active { border: 4px solid #ff5252 !important; }
+        
         body.high-contrast .child-gap { background-color: #333; }
         body.high-contrast .child-gap:hover { background-color: #555; }
         body.high-contrast .child-word:hover { background-color: #333; border-color: #ffeb3b; }
         
-        /* High contrast pink highlight */
-        body.high-contrast .child-word.capital-error {
-            background-color: #5c0029;
-            border-color: #ff80ab;
-        }
-        body.high-contrast .child-word.capital-error:hover {
-            background-color: #880e4f;
-            border-color: #ff80ab;
-        }
+        body.high-contrast .child-word.capital-error { background-color: #5c0029; border-color: #ff80ab; color: white; }
+        body.high-contrast .child-word.capital-error:hover { background-color: #880e4f; border-color: #ff80ab; }
 
-        body.high-contrast .child-punct {
-            color: #ffffff;
-            background-color: #333;
-        }
-        body.high-contrast .child-punct:hover {
-            background-color: #555;
-        }
-        body.high-contrast .active-child-target {
-            background-color: #000000 !important;
-            border: 2px solid #00e5ff !important;
-            color: #00e5ff !important;
-        }
-        body.high-contrast button {
-            border: 2px solid #ffffff;
-        }
+        body.high-contrast .child-punct { color: #ffffff; background-color: #333; }
+        body.high-contrast .child-punct:hover { background-color: #555; }
+        body.high-contrast .active-child-target { background-color: #000000 !important; border: 2px solid #00e5ff !important; color: #00e5ff !important; }
+        body.high-contrast button { border: 2px solid #ffffff; }
 
         .modal-overlay {
             position: fixed;
@@ -360,26 +372,11 @@
             color: black;
         }
 
-        .modal-box h2 {
-            margin-top: 0;
-            color: #d32f2f;
-            font-size: 26px;
-        }
-        
+        .modal-box h2 { margin-top: 0; color: #d32f2f; font-size: 26px; }
         .teacher-modal-box h2 { color: #9c27b0; }
         .teacher-modal-box { border-color: #9c27b0; }
-
-        .modal-box p {
-            font-size: 18px;
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        .modal-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-        }
+        .modal-box p { font-size: 18px; color: #333; margin-bottom: 20px; }
+        .modal-buttons { display: flex; justify-content: center; gap: 12px; }
 
         #confirm-clear-btn { background-color: #d32f2f; color: white; box-shadow: 0 3px #b71c1c; font-weight: bold; }
         #confirm-teacher-btn { background-color: #9c27b0; color: white; box-shadow: 0 3px #7b1fa2; font-weight: bold; }
@@ -400,7 +397,7 @@
 
         @media print {
             body { background-color: white !important; padding: 0 !important; margin: 0 !important; height: auto !important; overflow: visible !important; color: black !important; }
-            h1, .right-panel, .edit-header, .modal-overlay, #status, #contrast-toggle-btn { display: none !important; }
+            h1, .right-panel, .edit-header, .color-tint-bar, .modal-overlay, #status, #contrast-toggle-btn { display: none !important; }
             .app-container { display: block !important; max-width: 100% !important; height: auto !important; }
             .left-panel { width: 100% !important; height: auto !important; }
             #sentence-box {
@@ -423,6 +420,23 @@
                 <button id="edit-toggle-btn" class="mode-btn">✏️ Edit Mode: OFF</button>
                 <button id="teacher-toggle-btn" class="mode-btn">👩‍🏫 Teacher Mode: OFF</button>
             </div>
+            
+            <!-- NEW: Dyslexia Tint Selector -->
+            <div class="color-tint-bar" title="Change Background Tint">
+                <span class="tint-label">Tint:</span>
+                <button class="swatch-btn" data-color="#ffffff" style="background-color: #ffffff;" title="White"></button>
+                <button class="swatch-btn" data-color="#E6F2A2" style="background-color: #E6F2A2;" title="Celery"></button>
+                <button class="swatch-btn" data-color="#FFD6E5" style="background-color: #FFD6E5;" title="Pink"></button>
+                <button class="swatch-btn" data-color="#FFE0B2" style="background-color: #FFE0B2;" title="Orange"></button>
+                <button class="swatch-btn" data-color="#C8E6C9" style="background-color: #C8E6C9;" title="Grass"></button>
+                <button class="swatch-btn" data-color="#B3E5FC" style="background-color: #B3E5FC;" title="Sky"></button>
+                <button class="swatch-btn" data-color="#FFF9C4" style="background-color: #FFF9C4;" title="Yellow"></button>
+                <button class="swatch-btn" data-color="#B2DFDB" style="background-color: #B2DFDB;" title="Jade"></button>
+                <button class="swatch-btn" data-color="#F8BBD0" style="background-color: #F8BBD0;" title="Magenta"></button>
+                <button class="swatch-btn" data-color="#E1BEE7" style="background-color: #E1BEE7;" title="Purple"></button>
+                <button class="swatch-btn" data-color="#B2EBF2" style="background-color: #B2EBF2;" title="Aqua"></button>
+            </div>
+
             <div id="sentence-box" contenteditable="false"></div>
         </div>
 
@@ -503,6 +517,27 @@
         let phraseQueue = [];
         let backupText = ""; 
         let textHistory = [];
+
+        // --- BACKGROUND TINT LOGIC --- //
+        const rootVars = document.documentElement.style;
+        const swatches = document.querySelectorAll('.swatch-btn');
+        
+        const savedTint = localStorage.getItem('dyslexia_bg_color') || '#ffffff';
+        rootVars.setProperty('--box-bg', savedTint);
+        
+        swatches.forEach(btn => {
+            if (btn.getAttribute('data-color') === savedTint) {
+                btn.classList.add('active-swatch');
+            }
+            btn.addEventListener('click', () => {
+                const color = btn.getAttribute('data-color');
+                rootVars.setProperty('--box-bg', color);
+                localStorage.setItem('dyslexia_bg_color', color);
+                
+                swatches.forEach(s => s.classList.remove('active-swatch'));
+                btn.classList.add('active-swatch');
+            });
+        });
 
         // --- NATURAL TTS VOICE SETUP --- //
         let bestVoice = null;
@@ -593,7 +628,6 @@
                 el.classList.add('active-child-target');
             }
 
-            // Renders spans & checks for Capitalization Errors
             function renderChildSpans(text) {
                 let cleanText = text.replace(/\s+/g, ' ').trim();
                 const tokens = cleanText.match(/[a-zA-Z0-9'’]+|[.,!?"']/g) || [];
@@ -601,7 +635,7 @@
                 sentenceBox.innerHTML = '';
                 sentenceBox.appendChild(createGapSpan()); 
                 
-                let capNext = true; // Very first word should be capitalized
+                let capNext = true;
                 
                 tokens.forEach(token => {
                     const isPunct = /^[.,!?"']$/.test(token);
@@ -610,7 +644,7 @@
                     if (isPunct) {
                         span.className = 'child-punct';
                         if (/[.!?]/.test(token)) {
-                            capNext = true; // Next word after ending punctuation should be capitalized
+                            capNext = true; 
                         }
                     } else {
                         span.className = 'child-word';
@@ -618,27 +652,21 @@
                         let firstChar = token.charAt(0);
                         let isLetter = /[a-zA-Z]/.test(firstChar);
                         let isCapitalized = (firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase());
-                        
-                        // Check if word is I, I'm, I've, I'll, etc.
                         let isI = /^i(['’][a-z]+)?$/i.test(token);
                         
-                        // Error checking logic
                         if (isLetter) {
                             let hasError = false;
                             if (capNext || isI) {
-                                // Should be capitalized, but isn't
                                 if (!isCapitalized) hasError = true;
                             } else {
-                                // Shouldn't be capitalized, but is
                                 if (isCapitalized) hasError = true;
                             }
-                            
                             if (hasError) {
                                 span.classList.add('capital-error');
                             }
                         }
                         
-                        capNext = false; // Reset rule after a word is processed
+                        capNext = false; 
                     }
                     
                     span.innerText = token;
@@ -646,9 +674,7 @@
                     
                     if (!isPunct) {
                         span.addEventListener('mouseenter', () => {
-                            if (isHoverReadOn && isEditMode) {
-                                speakTextNaturally(token, 0.85);
-                            }
+                            if (isHoverReadOn && isEditMode) speakTextNaturally(token, 0.85);
                         });
                     }
 
@@ -657,7 +683,6 @@
                 });
             }
 
-            // Options Generator for single words
             function generateApproximations(baseWord) {
                 const shortWordDb = { 'i': ['i', 'eye', 'a'], 'a': ['a', 'uh', 'ey'], 'my': ['my', 'me', 'mai'], 'me': ['me', 'my', 'may'], 'is': ['is', 'his', 'as'], 'it': ['it', 'at', 'if'], 'the': ['the', 'they', 'a'], 'to': ['to', 'two', 'too'] };
                 if (shortWordDb[baseWord.toLowerCase()]) return shortWordDb[baseWord.toLowerCase()];
@@ -682,28 +707,22 @@
                 return Array.from(choices).slice(0, 3);
             }
 
-            // Check if the next word generated should be capitalized automatically
             function shouldCapitalizeNext() {
                 if (isEditMode) {
                     let activeEl = document.querySelector('.active-child-target');
                     if (activeEl) {
                         let prev = activeEl.previousElementSibling;
-                        // Look backwards past any gaps
-                        while (prev && prev.classList.contains('child-gap')) {
-                            prev = prev.previousElementSibling;
-                        }
-                        if (!prev) return true; // Start of text
-                        if (prev.classList.contains('child-punct') && /[.!?]/.test(prev.innerText)) {
-                            return true; // After ending punctuation
-                        }
+                        while (prev && prev.classList.contains('child-gap')) { prev = prev.previousElementSibling; }
+                        if (!prev) return true; 
+                        if (prev.classList.contains('child-punct') && /[.!?]/.test(prev.innerText)) { return true; }
                         return false;
                     }
                 }
                 
                 let text = getCurrentText().trim();
-                if (text.length === 0) return true; // Start of text
+                if (text.length === 0) return true; 
                 let lastChar = text.slice(-1);
-                return /[.!?]/.test(lastChar); // After ending punctuation
+                return /[.!?]/.test(lastChar); 
             }
 
             contrastToggleBtn.addEventListener('click', () => {
@@ -742,7 +761,6 @@
                     editToggleBtn.style.backgroundColor = "#00796b";
                     
                     capitalizeBtn.style.display = 'none'; 
-                    
                     statusText.innerText = "Teacher Mode ON: Keyboard unlocked.";
                     sentenceBox.focus();
                 } else if (isEditMode) {
@@ -757,7 +775,6 @@
                     teacherToggleBtn.style.backgroundColor = "#00796b";
                     
                     capitalizeBtn.style.display = 'block'; 
-                    
                     statusText.innerText = "Edit Mode ON: Tap a word, punctuation, or gap!";
                 } else {
                     sentenceBox.innerHTML = ''; 
@@ -772,7 +789,6 @@
                     teacherToggleBtn.style.backgroundColor = "#00796b";
                     
                     capitalizeBtn.style.display = 'none'; 
-                    
                     statusText.innerText = "Standard Mode: Text will go at the end.";
                 }
             }
@@ -915,7 +931,6 @@
                         });
                     }
                     
-                    // Smart Capitalization: Only capitalize the VERY FIRST word, and ONLY if the logic says it should
                     if (i === 0 && capNext) {
                         optionsArray = optionsArray.map(w => w.charAt(0).toUpperCase() + w.slice(1));
                     }
@@ -1082,7 +1097,6 @@
             document.getElementById('exclamation-btn').addEventListener('click', () => addPunctuation('!'));
             document.getElementById('quote-btn').addEventListener('click', () => addPunctuation('"'));
 
-            // Keydown listener for punctuation shortcuts
             document.addEventListener('keydown', (e) => {
                 if (isTeacherMode) return; 
                 
