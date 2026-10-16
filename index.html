@@ -243,6 +243,7 @@
             margin-top: 4px;
             flex-grow: 1;
             justify-content: space-evenly;
+            overflow-y: auto;
         }
 
         .option-btn {
@@ -255,6 +256,12 @@
             animation: popIn 0.3s ease-out;
             word-wrap: break-word;
             font-family: inherit;
+        }
+
+        .cancel-option-btn {
+            background-color: #d32f2f !important;
+            box-shadow: 0 4px #b71c1c !important;
+            margin-top: 8px;
         }
 
         #status {
@@ -365,8 +372,9 @@
         @media (max-width: 650px) {
             .app-container { flex-direction: column; }
             .left-panel { height: 40%; }
-            #options-container { flex-direction: row; }
-            .option-btn { flex: 1; }
+            #options-container { flex-direction: row; flex-wrap: wrap; }
+            .option-btn { flex: 1; min-width: 100px; }
+            .cancel-option-btn { min-width: 100%; margin-top: 0; }
         }
 
         @media print {
@@ -475,24 +483,18 @@
         let backupText = ""; 
         let textHistory = [];
 
-        // --- NATURAL TTS VOICE SETUP (FIXED) --- //
+        // --- NATURAL TTS VOICE SETUP --- //
         let bestVoice = null;
         function loadBestVoice() {
             let voices = window.speechSynthesis.getVoices();
             if (!voices.length) return;
             
-            // 1. Filter for UK English voices first
             let ukVoices = voices.filter(v => v.lang === 'en-GB' || v.lang === 'en_GB');
-            
-            // 2. Filter for any English voices as a backup
             let enVoices = voices.filter(v => v.lang.startsWith('en'));
-            
-            // 3. Decide which pool of voices to use
             let voicePool = ukVoices.length > 0 ? ukVoices : (enVoices.length > 0 ? enVoices : voices);
 
-            // 4. Find the most natural sounding one in our chosen English pool
             bestVoice = voicePool.find(v => v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Google')) 
-                     || voicePool[0]; // Fallback to the first voice in the pool if no "premium" ones exist
+                     || voicePool[0]; 
         }
         
         if (window.speechSynthesis.onvoiceschanged !== undefined) {
@@ -596,6 +598,31 @@
                     sentenceBox.appendChild(span);
                     sentenceBox.appendChild(createGapSpan()); 
                 });
+            }
+
+            // Options Generator for single words
+            function generateApproximations(baseWord) {
+                const shortWordDb = { 'i': ['i', 'eye', 'a'], 'a': ['a', 'uh', 'ey'], 'my': ['my', 'me', 'mai'], 'me': ['me', 'my', 'may'], 'is': ['is', 'his', 'as'], 'it': ['it', 'at', 'if'], 'the': ['the', 'they', 'a'], 'to': ['to', 'two', 'too'] };
+                if (shortWordDb[baseWord.toLowerCase()]) return shortWordDb[baseWord.toLowerCase()];
+                
+                const phonetics = { 'th': ['f', 'v', 's'], 'r': ['w', 'l'], 'l': ['w', 'y'], 's': ['z', 'sh'], 'c': ['k', 's'], 'k': ['g', 'c'], 'p': ['b'], 't': ['d'] };
+                let choices = new Set([baseWord]);
+                
+                for (let key in phonetics) {
+                    if (baseWord.includes(key)) {
+                        phonetics[key].forEach(rep => { if (choices.size < 3) choices.add(baseWord.replace(key, rep)); });
+                    }
+                }
+                if (choices.size < 3 && baseWord.length > 3) choices.add(baseWord.slice(0, -1));
+                if (choices.size < 3) choices.add(baseWord + "e");
+                
+                const simpleFallbacks = ['my', 'a', 'i', 'the', 'is', 'it', 'to'];
+                let fallbackIdx = 0;
+                while (choices.size < 3 && fallbackIdx < simpleFallbacks.length) {
+                    if (simpleFallbacks[fallbackIdx] !== baseWord) choices.add(simpleFallbacks[fallbackIdx]);
+                    fallbackIdx++;
+                }
+                return Array.from(choices).slice(0, 3);
             }
 
             contrastToggleBtn.addEventListener('click', () => {
@@ -768,29 +795,60 @@
                 }
             }
 
+            // --- RESTORED WORD-BY-WORD RESULT HANDLING ---
             recognition.onresult = (event) => {
-                let alternatives = event.results[0];
-                let uniquePhrases = [];
-                for (let i = 0; i < alternatives.length; i++) {
-                    let text = alternatives[i].transcript.trim().toLowerCase();
-                    let formatted = text.charAt(0).toUpperCase() + text.slice(1);
-                    if (!uniquePhrases.includes(formatted)) {
-                        uniquePhrases.push(formatted);
+                const resultCount = event.results.length;
+                if (resultCount === 0) return;
+                
+                const alternatives = event.results[resultCount - 1];
+                let bestPhrase = alternatives[0].transcript.trim().toLowerCase();
+                if (!bestPhrase) return;
+
+                // Split into single words
+                const phraseWords = bestPhrase.split(/\s+/);
+                phraseQueue = [];
+                
+                for (let i = 0; i < phraseWords.length; i++) {
+                    let wordOptions = new Set();
+                    
+                    // Look through Google's alternative phrase guesses for the word at position [i]
+                    for (let altIndex = 0; altIndex < alternatives.length; altIndex++) {
+                        const altTranscript = alternatives[altIndex].transcript.trim().toLowerCase();
+                        const altWords = altTranscript.split(/\s+/);
+                        if (altWords.length === phraseWords.length) {
+                            wordOptions.add(altWords[i]);
+                        }
                     }
+                    
+                    if (wordOptions.size === 0) {
+                        wordOptions.add(phraseWords[i]);
+                    }
+                    
+                    let optionsArray = Array.from(wordOptions);
+                    
+                    // If we don't have 3 options from Google, generate phonetic approximations
+                    if (optionsArray.length < 3) {
+                        const approx = generateApproximations(optionsArray[0]);
+                        approx.forEach(w => { 
+                            if(optionsArray.length < 3 && !optionsArray.includes(w)) {
+                                optionsArray.push(w); 
+                            }
+                        });
+                    }
+                    
+                    // Push max 3 options to the queue for this word
+                    phraseQueue.push(optionsArray.slice(0,3));
                 }
 
-                if (uniquePhrases.length > 0) {
-                    phraseQueue.push(uniquePhrases);
-                    if (phraseQueue.length === 1) {
-                        displayOptions(phraseQueue[0]);
-                    }
+                if (phraseQueue.length > 0) {
+                    displayOptions(phraseQueue[0]);
                     stopListeningCycle(); 
                 }
             };
 
             function displayOptions(options) {
                 optionsContainer.innerHTML = '';
-                statusText.innerText = "Which one did you mean? Tap a purple button!";
+                statusText.innerText = `Which word? (${phraseQueue.length} remaining)`;
                 
                 options.forEach(optionText => {
                     const btn = document.createElement('button');
@@ -800,17 +858,28 @@
                         saveStateToHistory();
                         insertText(optionText);
                         optionsContainer.innerHTML = '';
-                        statusText.innerText = "Great! Ready for more.";
                         
                         phraseQueue.shift();
                         if (phraseQueue.length > 0) {
                             displayOptions(phraseQueue[0]);
                         } else {
+                            statusText.innerText = "Great! Ready for more.";
                             setTimeout(() => { startListeningCycle(); }, 600);
                         }
                     };
                     optionsContainer.appendChild(btn);
                 });
+
+                // NEW: Cancel / Clear Options button
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'option-btn cancel-option-btn';
+                cancelBtn.innerText = "❌ None (Try Again)";
+                cancelBtn.onclick = () => {
+                    optionsContainer.innerHTML = '';
+                    phraseQueue = []; // Empty the queue
+                    statusText.innerText = "Options cleared. Say the word again!";
+                };
+                optionsContainer.appendChild(cancelBtn);
             }
 
             function insertText(newWords) {
