@@ -144,7 +144,7 @@
             border-color: #fbc02d;
         }
 
-        /* SEPARATE PUNCTUATION SPAN STYLING (Soft look matching blank spaces) */
+        /* SEPARATE PUNCTUATION SPAN STYLING */
         .child-punct {
             display: inline-block;
             padding: 2px 6px;
@@ -463,41 +463,49 @@
         let isAutoListening = false;
         let isListeningActive = false;
         
-        let isEditMode = false; // Child Edit Mode
+        let isEditMode = false; 
         let isTeacherMode = false;
         let isHighContrast = false;
-        let isHoverReadOn = false; // New toggle for hover reading
+        let isHoverReadOn = false;
 
         let restartTimer = null;
         let audioCtx = null;
         
         let phraseQueue = [];
         let backupText = ""; 
-        let textHistory = []; // History for the Undo feature
+        let textHistory = [];
 
-        // --- NATURAL TTS VOICE SETUP --- //
+        // --- NATURAL TTS VOICE SETUP (FIXED) --- //
         let bestVoice = null;
         function loadBestVoice() {
             let voices = window.speechSynthesis.getVoices();
             if (!voices.length) return;
-            // Look for high quality/natural sounding voices first
-            bestVoice = voices.find(v => v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Google')) 
-                     || voices.find(v => v.lang === 'en-GB' || v.lang === 'en-US') 
-                     || voices[0];
+            
+            // 1. Filter for UK English voices first
+            let ukVoices = voices.filter(v => v.lang === 'en-GB' || v.lang === 'en_GB');
+            
+            // 2. Filter for any English voices as a backup
+            let enVoices = voices.filter(v => v.lang.startsWith('en'));
+            
+            // 3. Decide which pool of voices to use
+            let voicePool = ukVoices.length > 0 ? ukVoices : (enVoices.length > 0 ? enVoices : voices);
+
+            // 4. Find the most natural sounding one in our chosen English pool
+            bestVoice = voicePool.find(v => v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Google')) 
+                     || voicePool[0]; // Fallback to the first voice in the pool if no "premium" ones exist
         }
-        // Voices load asynchronously in some browsers
+        
         if (window.speechSynthesis.onvoiceschanged !== undefined) {
             window.speechSynthesis.onvoiceschanged = loadBestVoice;
         }
         
-        // Helper function for more natural speaking
         function speakTextNaturally(text, rate = 0.9) {
             if (!text) return;
-            window.speechSynthesis.cancel(); // Stop anything currently playing
+            window.speechSynthesis.cancel(); 
             let utterance = new SpeechSynthesisUtterance(text);
             if (bestVoice) utterance.voice = bestVoice;
-            utterance.rate = rate; // Slightly slower for clarity
-            utterance.pitch = 1.05; // Very slight pitch up for a friendlier tone
+            utterance.rate = rate; 
+            utterance.pitch = 1.05; 
             window.speechSynthesis.speak(utterance);
         }
 
@@ -530,7 +538,6 @@
                 } catch (e) {}
             }
 
-            // --- TEXT EXTRACTION HELPER --- //
             function getCurrentText() {
                 let text = sentenceBox.textContent || "";
                 return text.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').trim();
@@ -545,13 +552,11 @@
                 localStorage.setItem('saved_voice_writer_text', newText);
             }
 
-            // --- UNDO HISTORY HELPER --- //
             function saveStateToHistory() {
                 textHistory.push(getCurrentText());
                 if (textHistory.length > 30) { textHistory.shift(); }
             }
 
-            // --- CHILD EDIT MODE SPANS LOGIC --- //
             function createGapSpan() {
                 const gSpan = document.createElement('span');
                 gSpan.className = 'child-gap';
@@ -565,7 +570,6 @@
                 el.classList.add('active-child-target');
             }
 
-            // Renders words, gaps AND punctuation separately
             function renderChildSpans(text) {
                 let cleanText = text.replace(/\s+/g, ' ').trim();
                 const tokens = cleanText.match(/[a-zA-Z0-9'’]+|[.,!?"']/g) || [];
@@ -581,11 +585,10 @@
                     
                     span.onclick = () => setActiveTarget(span);
                     
-                    // Add Hover to Read listener
                     if (!isPunct) {
                         span.addEventListener('mouseenter', () => {
                             if (isHoverReadOn && isEditMode) {
-                                speakTextNaturally(token, 0.85); // Speak the individual word
+                                speakTextNaturally(token, 0.85);
                             }
                         });
                     }
@@ -595,7 +598,6 @@
                 });
             }
 
-            // --- MODE TOGGLES --- //
             contrastToggleBtn.addEventListener('click', () => {
                 isHighContrast = !isHighContrast;
                 document.body.classList.toggle('high-contrast', isHighContrast);
@@ -673,7 +675,6 @@
                 updateModes();
             });
 
-            // TEACHER MODAL LOGIC
             const teacherModal = document.getElementById('teacher-modal');
             teacherToggleBtn.addEventListener('click', () => {
                 if (isTeacherMode) {
@@ -701,13 +702,11 @@
                 }
             });
 
-            // --- LOCAL STORAGE INIT --- //
             const savedText = localStorage.getItem('saved_voice_writer_text');
             if (savedText) {
                 updateSentenceText(savedText);
             }
 
-            // --- RECOGNITION START/STOP --- //
             listenBtn.addEventListener('click', () => {
                 warmUpMicrophoneHardware();
                 if (!isListeningActive) {
@@ -769,7 +768,6 @@
                 }
             }
 
-            // --- RESULT HANDLING --- //
             recognition.onresult = (event) => {
                 let alternatives = event.results[0];
                 let uniquePhrases = [];
@@ -841,7 +839,6 @@
                             activeEl.innerText = newWords;
                             activeEl.classList.remove('active-child-target');
                             
-                            // Ensure the event listener exists if changing from punct back to word
                             activeEl.addEventListener('mouseenter', () => {
                                 if (isHoverReadOn && isEditMode) speakTextNaturally(newWords, 0.85);
                             });
@@ -928,14 +925,12 @@
                 updateSentenceText(currentText);
             }
 
-            // Bind Punctuation Buttons
             document.getElementById('comma-btn').addEventListener('click', () => addPunctuation(','));
             document.getElementById('period-btn').addEventListener('click', () => addPunctuation('.'));
             document.getElementById('question-btn').addEventListener('click', () => addPunctuation('?'));
             document.getElementById('exclamation-btn').addEventListener('click', () => addPunctuation('!'));
             document.getElementById('quote-btn').addEventListener('click', () => addPunctuation('"'));
 
-            // Undo Action
             document.getElementById('undo-action-btn').addEventListener('click', () => {
                 if (textHistory.length > 0) {
                     const previousText = textHistory.pop();
@@ -946,7 +941,6 @@
                 }
             });
 
-            // Delete Action
             document.getElementById('delete-btn').addEventListener('click', () => {
                 saveStateToHistory();
                 
@@ -979,7 +973,6 @@
                 }
             });
 
-            // Capitalize Action
             capitalizeBtn.addEventListener('click', () => {
                 if (isEditMode) {
                     let activeEl = document.querySelector('.active-child-target');
@@ -1000,7 +993,6 @@
                 }
             });
 
-            // --- READ ALOUD (Whole Sentence) --- //
             document.getElementById('read-sentence-btn').addEventListener('click', () => {
                 let currentText = getCurrentText();
                 if (currentText === "") {
@@ -1009,11 +1001,10 @@
                 }
                 stopListeningCycle(); 
                 statusText.innerText = "🔊 Reading...";
-                loadBestVoice(); // Ensure we have the best voice right before speaking
+                loadBestVoice(); 
                 speakTextNaturally(currentText, 0.85); 
             });
 
-            // --- COPY, PRINT, CLEAR, RESTORE --- //
             document.getElementById('copy-btn').addEventListener('click', () => {
                 let currentText = getCurrentText();
                 navigator.clipboard.writeText(currentText).then(() => {
@@ -1058,7 +1049,6 @@
                 }
             });
             
-            // Load voice pool on startup
             loadBestVoice();
         }
     </script>
