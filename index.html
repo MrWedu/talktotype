@@ -87,7 +87,7 @@
         }
 
         .color-tint-bar {
-            display: none; /* Hidden by default */
+            display: none; 
             justify-content: center;
             align-items: center;
             gap: 6px;
@@ -285,7 +285,10 @@
         #undo-action-btn { background-color: #f57c00; color: #ffffff; box-shadow: 0 3px #e65100; font-weight: bold; flex: 1;}
         #delete-btn { background-color: #e53935; color: #ffffff; box-shadow: 0 3px #b71c1c; font-weight: bold; flex: 1;}
         #capitalize-btn { background-color: #43a047; color: #ffffff; box-shadow: 0 3px #1b5e20; font-weight: bold; flex: 1; display: none; }
+        
         #hover-read-toggle-btn { background-color: #00acc1; color: #ffffff; box-shadow: 0 3px #00838f; font-weight: bold; flex: 1; }
+        #picture-hover-toggle-btn { background-color: #e91e63; color: #ffffff; box-shadow: 0 3px #c2185b; font-weight: bold; flex: 1; }
+
         #clear-btn { background-color: #424242; color: #ffffff; box-shadow: 0 3px #212121; flex: 1;}
         #restore-btn { background-color: #00897b; color: #ffffff; box-shadow: 0 3px #004d40; font-weight: bold; display: none; flex: 1;}
         #read-sentence-btn { background-color: #6a1b9a; color: #ffffff; box-shadow: 0 3px #4a148c; flex: 1;}
@@ -388,6 +391,21 @@
         #confirm-teacher-btn { background-color: #9c27b0; color: white; box-shadow: 0 3px #7b1fa2; font-weight: bold; }
         .cancel-btn { background-color: #757575; color: white; box-shadow: 0 3px #424242; }
 
+        /* PICTURE TOOLTIP STYLES */
+        #picture-tooltip {
+            position: fixed;
+            display: none;
+            background: white;
+            border: 3px solid #e91e63;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+            font-size: 60px;
+            z-index: 9999;
+            pointer-events: none;
+            transform: translate(-50%, -110%);
+        }
+
         @keyframes popIn {
             0% { transform: scale(0.8); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
@@ -403,7 +421,7 @@
 
         @media print {
             body { background-color: white !important; padding: 0 !important; margin: 0 !important; height: auto !important; overflow: visible !important; color: black !important; }
-            h1, .right-panel, .edit-header, .color-tint-bar, .modal-overlay, #status, #contrast-toggle-btn { display: none !important; }
+            h1, .right-panel, .edit-header, .color-tint-bar, .modal-overlay, #status, #contrast-toggle-btn, #picture-tooltip { display: none !important; }
             .app-container { display: block !important; max-width: 100% !important; height: auto !important; }
             .left-panel { width: 100% !important; height: auto !important; }
             #sentence-box {
@@ -428,7 +446,6 @@
                 <button id="teacher-toggle-btn" class="mode-btn">👩‍🏫 Teacher Mode: OFF</button>
             </div>
             
-            <!-- Collapsible Dyslexia Tint Selector -->
             <div class="color-tint-bar" id="color-tint-bar" title="Change Background Tint">
                 <span class="tint-label">Tint:</span>
                 <button class="swatch-btn" data-color="#ffffff" style="background-color: #ffffff;" title="White"></button>
@@ -471,6 +488,10 @@
             <div class="controls-group">
                 <button id="read-sentence-btn">🔊 Read</button>
                 <button id="hover-read-toggle-btn">🗣️ Hover Read: OFF</button>
+                <button id="picture-hover-toggle-btn">🖼️ Picture Hover: OFF</button>
+            </div>
+
+            <div class="controls-group">
                 <button id="copy-btn" class="action-btn">📋 Copy</button>
                 <button id="print-btn">🖨️ Print</button>
                 <button id="clear-btn">🗑️ Clear</button>
@@ -483,7 +504,10 @@
         </div>
     </div>
 
-    <!-- CLEAR CONFIRMATION MODAL -->
+    <!-- Floating Tooltip for Nouns -->
+    <div id="picture-tooltip"></div>
+
+    <!-- MODALS -->
     <div id="clear-modal" class="modal-overlay" style="display: none;">
         <div class="modal-box">
             <h2>⚠️ Are you sure?</h2>
@@ -495,7 +519,6 @@
         </div>
     </div>
 
-    <!-- TEACHER MODE ADULT CHECK MODAL -->
     <div id="teacher-modal" class="modal-overlay" style="display: none;">
         <div class="modal-box teacher-modal-box">
             <h2>👩‍🏫 Teacher Mode</h2>
@@ -508,6 +531,20 @@
     </div>
 
     <script>
+        // --- ALWAYS-ON SAFETY FILTER --- //
+        const blockedWords = new Set([
+            'fuck', 'fucking', 'shit', 'shitting', 'bitch', 'ass', 'asshole', 'cunt', 
+            'dick', 'cock', 'pussy', 'whore', 'slut', 'bastard', 'damn', 'crap', 'sex', 
+            'porn', 'boob', 'boobs', 'vagina', 'penis', 'tit', 'tits', 'cum'
+        ]);
+
+        function isBadWord(word) {
+            if (!word) return false;
+            // Clean punctuation off before checking
+            const clean = word.toLowerCase().replace(/[^a-z]/g, '');
+            return blockedWords.has(clean);
+        }
+
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
         let isAutoListening = false;
@@ -518,6 +555,7 @@
         let isTeacherMode = false;
         let isHighContrast = false;
         let isHoverReadOn = false;
+        let isPictureHoverOn = false;
 
         let restartTimer = null;
         let audioCtx = null;
@@ -525,6 +563,33 @@
         let phraseQueue = [];
         let backupText = ""; 
         let textHistory = [];
+
+        // --- PICTURE DICTIONARY --- //
+        const nounDictionary = {
+            "dog": "🐶", "dogs": "🐶", "puppy": "🐶",
+            "cat": "🐱", "cats": "🐱", "kitten": "🐱",
+            "car": "🚗", "cars": "🚗", "truck": "🛻",
+            "house": "🏠", "houses": "🏠", "home": "🏡",
+            "apple": "🍎", "apples": "🍎",
+            "tree": "🌳", "trees": "🌳",
+            "sun": "☀️", "moon": "🌙",
+            "star": "⭐", "stars": "⭐",
+            "book": "📖", "books": "📚",
+            "school": "🏫", "teacher": "👩‍🏫",
+            "water": "💧", "fire": "🔥",
+            "boy": "👦", "girl": "👧", "baby": "👶",
+            "bird": "🐦", "birds": "🐦", "duck": "🦆",
+            "fish": "🐟", "food": "🍔", "pizza": "🍕",
+            "ball": "⚽", "game": "🎮", "toy": "🧸",
+            "bear": "🐻", "lion": "🦁", "tiger": "🐯",
+            "bus": "🚌", "train": "🚂", "plane": "✈️",
+            "shoe": "👟", "shoes": "👟", "hat": "🧢",
+            "flower": "🌸", "flowers": "🌸",
+            "eye": "👁️", "eyes": "👀", "hand": "✋",
+            "heart": "❤️", "love": "❤️"
+        };
+
+        const pictureTooltip = document.getElementById('picture-tooltip');
 
         // --- BACKGROUND TINT LOGIC --- //
         const rootVars = document.documentElement.style;
@@ -567,13 +632,10 @@
         function loadBestVoice() {
             let voices = window.speechSynthesis.getVoices();
             if (!voices.length) return;
-            
             let ukVoices = voices.filter(v => v.lang === 'en-GB' || v.lang === 'en_GB');
             let enVoices = voices.filter(v => v.lang.startsWith('en'));
             let voicePool = ukVoices.length > 0 ? ukVoices : (enVoices.length > 0 ? enVoices : voices);
-
-            bestVoice = voicePool.find(v => v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Google')) 
-                     || voicePool[0]; 
+            bestVoice = voicePool.find(v => v.name.includes('Natural') || v.name.includes('Premium') || v.name.includes('Google')) || voicePool[0]; 
         }
         
         if (window.speechSynthesis.onvoiceschanged !== undefined) {
@@ -581,7 +643,7 @@
         }
         
         function speakTextNaturally(text, rate = 0.9) {
-            if (!text) return;
+            if (!text || isBadWord(text)) return; // Safety check before speaking
             window.speechSynthesis.cancel(); 
             let utterance = new SpeechSynthesisUtterance(text);
             if (bestVoice) utterance.voice = bestVoice;
@@ -599,6 +661,7 @@
         const contrastToggleBtn = document.getElementById('contrast-toggle-btn');
         const capitalizeBtn = document.getElementById('capitalize-btn');
         const hoverReadToggleBtn = document.getElementById('hover-read-toggle-btn');
+        const pictureHoverToggleBtn = document.getElementById('picture-hover-toggle-btn');
 
         if (!SpeechRecognition) {
             statusText.innerText = "Oops! Your browser doesn't support voice typing. Try Google Chrome!";
@@ -651,6 +714,37 @@
                 el.classList.add('active-child-target');
             }
 
+            function bindWordHoverEvents(span, token) {
+                span.addEventListener('mouseenter', (e) => {
+                    if (isEditMode) {
+                        const cleanWord = token.toLowerCase().replace(/[^a-z]/g, '');
+                        
+                        // Safety filter: prevent interactions on typed bad words entirely
+                        if (isBadWord(cleanWord)) return;
+
+                        if (isHoverReadOn) speakTextNaturally(token, 0.85);
+                        
+                        if (isPictureHoverOn && nounDictionary[cleanWord]) {
+                            pictureTooltip.innerText = nounDictionary[cleanWord];
+                            pictureTooltip.style.display = 'block';
+                            pictureTooltip.style.left = e.clientX + 'px';
+                            pictureTooltip.style.top = e.clientY + 'px';
+                        }
+                    }
+                });
+
+                span.addEventListener('mousemove', (e) => {
+                    if (isPictureHoverOn && pictureTooltip.style.display === 'block') {
+                        pictureTooltip.style.left = e.clientX + 'px';
+                        pictureTooltip.style.top = e.clientY + 'px';
+                    }
+                });
+
+                span.addEventListener('mouseleave', () => {
+                    pictureTooltip.style.display = 'none';
+                });
+            }
+
             function renderChildSpans(text) {
                 let cleanText = text.replace(/\s+/g, ' ').trim();
                 const tokens = cleanText.match(/[a-zA-Z0-9'’]+|[.,!?"']/g) || [];
@@ -688,7 +782,6 @@
                                 span.classList.add('capital-error');
                             }
                         }
-                        
                         capNext = false; 
                     }
                     
@@ -696,9 +789,7 @@
                     span.onclick = () => setActiveTarget(span);
                     
                     if (!isPunct) {
-                        span.addEventListener('mouseenter', () => {
-                            if (isHoverReadOn && isEditMode) speakTextNaturally(token, 0.85);
-                        });
+                        bindWordHoverEvents(span, token);
                     }
 
                     sentenceBox.appendChild(span);
@@ -708,7 +799,7 @@
 
             function generateApproximations(baseWord) {
                 const shortWordDb = { 'i': ['i', 'eye', 'a'], 'a': ['a', 'uh', 'ey'], 'my': ['my', 'me', 'mai'], 'me': ['me', 'my', 'may'], 'is': ['is', 'his', 'as'], 'it': ['it', 'at', 'if'], 'the': ['the', 'they', 'a'], 'to': ['to', 'two', 'too'] };
-                if (shortWordDb[baseWord.toLowerCase()]) return shortWordDb[baseWord.toLowerCase()];
+                if (shortWordDb[baseWord.toLowerCase()]) return shortWordDb[baseWord.toLowerCase()].filter(w => !isBadWord(w));
                 
                 const phonetics = { 'th': ['f', 'v', 's'], 'r': ['w', 'l'], 'l': ['w', 'y'], 's': ['z', 'sh'], 'c': ['k', 's'], 'k': ['g', 'c'], 'p': ['b'], 't': ['d'] };
                 let choices = new Set([baseWord]);
@@ -727,7 +818,8 @@
                     if (simpleFallbacks[fallbackIdx] !== baseWord) choices.add(simpleFallbacks[fallbackIdx]);
                     fallbackIdx++;
                 }
-                return Array.from(choices).slice(0, 3);
+                // Filter out bad words from approximations
+                return Array.from(choices).filter(w => !isBadWord(w)).slice(0, 3);
             }
 
             function shouldCapitalizeNext() {
@@ -759,12 +851,27 @@
                     hoverReadToggleBtn.innerText = "🗣️ Hover Read: ON";
                     hoverReadToggleBtn.style.backgroundColor = "#ff9800";
                     hoverReadToggleBtn.style.color = "#000";
-                    statusText.innerText = "Hover Read ON: Move your mouse over words in Edit Mode!";
                 } else {
                     hoverReadToggleBtn.innerText = "🗣️ Hover Read: OFF";
                     hoverReadToggleBtn.style.backgroundColor = "#00acc1";
                     hoverReadToggleBtn.style.color = "#fff";
-                    statusText.innerText = "Hover Read OFF.";
+                }
+            });
+
+            pictureHoverToggleBtn.addEventListener('click', () => {
+                isPictureHoverOn = !isPictureHoverOn;
+                if (isPictureHoverOn) {
+                    pictureHoverToggleBtn.innerText = "🖼️ Picture Hover: ON";
+                    pictureHoverToggleBtn.style.backgroundColor = "#ff9800";
+                    pictureHoverToggleBtn.style.color = "#000";
+                    if (!isEditMode) {
+                        statusText.innerText = "Picture Hover enabled! Turn ON Edit Mode to use it.";
+                    }
+                } else {
+                    pictureHoverToggleBtn.innerText = "🖼️ Picture Hover: OFF";
+                    pictureHoverToggleBtn.style.backgroundColor = "#e91e63";
+                    pictureHoverToggleBtn.style.color = "#fff";
+                    pictureTooltip.style.display = 'none';
                 }
             });
 
@@ -935,23 +1042,34 @@
                         const altTranscript = alternatives[altIndex].transcript.trim().toLowerCase();
                         const altWords = altTranscript.split(/\s+/);
                         if (altWords.length === phraseWords.length) {
-                            wordOptions.add(altWords[i]);
+                            let candidate = altWords[i];
+                            // Filter out profanity directly from the raw incoming transcript alternatives
+                            if (!isBadWord(candidate)) {
+                                wordOptions.add(candidate);
+                            }
                         }
                     }
                     
-                    if (wordOptions.size === 0) {
+                    // If the best phrase word wasn't added but it's safe, add it
+                    if (wordOptions.size === 0 && !isBadWord(phraseWords[i])) {
                         wordOptions.add(phraseWords[i]);
                     }
                     
                     let optionsArray = Array.from(wordOptions);
                     
-                    if (optionsArray.length < 3) {
+                    // Generate safe approximations if we don't have enough options
+                    if (optionsArray.length > 0 && optionsArray.length < 3) {
                         const approx = generateApproximations(optionsArray[0]);
                         approx.forEach(w => { 
                             if(optionsArray.length < 3 && !optionsArray.includes(w)) {
                                 optionsArray.push(w); 
                             }
                         });
+                    }
+
+                    // Failsafe: If a word was completely blocked leaving 0 safe options, use a placeholder
+                    if (optionsArray.length === 0) {
+                        optionsArray.push("***");
                     }
                     
                     if (i === 0 && capNext) {
@@ -1014,9 +1132,7 @@
                                 wSpan.className = 'child-word';
                                 wSpan.innerText = w;
                                 wSpan.onclick = () => setActiveTarget(wSpan);
-                                wSpan.addEventListener('mouseenter', () => {
-                                    if (isHoverReadOn && isEditMode) speakTextNaturally(w, 0.85);
-                                });
+                                bindWordHoverEvents(wSpan, w);
                                 
                                 let newGap = createGapSpan();
                                 sentenceBox.insertBefore(wSpan, nextEl);
@@ -1028,9 +1144,11 @@
                             activeEl.innerText = newWords;
                             activeEl.classList.remove('active-child-target');
                             
-                            activeEl.addEventListener('mouseenter', () => {
-                                if (isHoverReadOn && isEditMode) speakTextNaturally(newWords, 0.85);
-                            });
+                            // Re-bind hover with new word
+                            let newSpan = activeEl.cloneNode(true);
+                            newSpan.onclick = () => setActiveTarget(newSpan);
+                            bindWordHoverEvents(newSpan, newWords);
+                            activeEl.parentNode.replaceChild(newSpan, activeEl);
                         }
                         renderChildSpans(getCurrentText());
                         return;
