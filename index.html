@@ -169,7 +169,6 @@
             border: 4px solid #9c27b0 !important;
         }
         
-        /* BASE SPAN STYLES (Used in Normal Mode too) */
         .child-gap {
             display: inline;
             transition: background 0.2s;
@@ -186,13 +185,11 @@
             transition: all 0.2s;
         }
 
-        /* NORMAL MODE FEATURE HOVER (When Picture/Read tools are ON) */
         #sentence-box.features-on:not(.child-edit-active) .child-word:hover {
             background-color: rgba(0, 188, 212, 0.15);
             cursor: pointer;
         }
 
-        /* EDIT MODE STYLES */
         #sentence-box.child-edit-active .child-gap {
             display: inline-block;
             width: 20px;
@@ -517,7 +514,7 @@
         </div>
     </div>
 
-    <!-- Floating Tooltip for Nouns -->
+    <!-- Floating Tooltip for Nouns & Verbs -->
     <div id="picture-tooltip"></div>
 
     <!-- MODALS -->
@@ -576,8 +573,9 @@
         let backupText = ""; 
         let textHistory = [];
 
-        // --- PICTURE DICTIONARY --- //
-        const nounDictionary = {
+        // --- PICTURE DICTIONARY (Nouns & Verbs) --- //
+        const pictureDictionary = {
+            // Nouns
             "dog": "🐶", "dogs": "🐶", "puppy": "🐶",
             "cat": "🐱", "cats": "🐱", "kitten": "🐱",
             "car": "🚗", "cars": "🚗", "truck": "🛻",
@@ -598,7 +596,37 @@
             "shoe": "👟", "shoes": "👟", "hat": "🧢",
             "flower": "🌸", "flowers": "🌸",
             "eye": "👁️", "eyes": "👀", "hand": "✋",
-            "heart": "❤️", "love": "❤️"
+            "heart": "❤️", "love": "❤️",
+
+            // Verbs
+            "run": "🏃", "running": "🏃", "ran": "🏃",
+            "walk": "🚶", "walking": "🚶", "walked": "🚶",
+            "jump": "🦘", "jumping": "🦘", "jumped": "🦘",
+            "eat": "🍽️", "eating": "🍽️", "ate": "🍽️",
+            "drink": "🥤", "drinking": "🥤", "drank": "🥤",
+            "sleep": "😴", "sleeping": "😴", "slept": "😴",
+            "read": "📖", "reading": "📖",
+            "write": "✍️", "writing": "✍️", "wrote": "✍️",
+            "play": "🎮", "playing": "🎮", "played": "🎮",
+            "sing": "🎤", "singing": "🎤", "sang": "🎤",
+            "dance": "💃", "dancing": "💃", "danced": "💃",
+            "swim": "🏊", "swimming": "🏊", "swam": "🏊",
+            "fly": "✈️", "flying": "✈️", "flew": "✈️",
+            "look": "👀", "looking": "👀", "looked": "👀",
+            "see": "👁️", "seeing": "👁️", "saw": "👁️",
+            "listen": "👂", "listening": "👂",
+            "hear": "👂", "hearing": "👂", "heard": "👂",
+            "talk": "🗣️", "talking": "🗣️",
+            "speak": "🗣️", "speaking": "🗣️", "spoke": "🗣️",
+            "cry": "😢", "crying": "😢", "cried": "😢",
+            "laugh": "😂", "laughing": "😂", "laughed": "😂",
+            "smile": "😊", "smiling": "😊", "smiled": "😊",
+            "think": "🤔", "thinking": "🤔", "thought": "🤔",
+            "cook": "🍳", "cooking": "🍳", "cooked": "🍳",
+            "stop": "🛑", "stopping": "🛑", "stopped": "🛑",
+            "go": "🟢", "going": "🟢", "went": "🟢",
+            "sit": "🪑", "sitting": "🪑", "sat": "🪑",
+            "stand": "🧍", "standing": "🧍", "stood": "🧍"
         };
 
         const pictureTooltip = document.getElementById('picture-tooltip');
@@ -743,8 +771,8 @@
 
                     if (isHoverReadOn) speakTextNaturally(token, 0.85);
                     
-                    if (isPictureHoverOn && nounDictionary[cleanWord]) {
-                        pictureTooltip.innerText = nounDictionary[cleanWord];
+                    if (isPictureHoverOn && pictureDictionary[cleanWord]) {
+                        pictureTooltip.innerText = pictureDictionary[cleanWord];
                         pictureTooltip.style.display = 'block';
                         pictureTooltip.style.left = e.clientX + 'px';
                         pictureTooltip.style.top = e.clientY + 'px';
