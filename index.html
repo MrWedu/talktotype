@@ -164,8 +164,36 @@
             border: 4px solid #ff9800 !important;
             white-space: normal;
         }
+
+        #sentence-box.teacher-edit-active {
+            border: 4px solid #9c27b0 !important;
+        }
         
+        /* BASE SPAN STYLES (Used in Normal Mode too) */
         .child-gap {
+            display: inline;
+            transition: background 0.2s;
+        }
+        .child-word {
+            display: inline-block;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .child-punct {
+            display: inline-block;
+            font-weight: 900;
+            color: inherit;
+            transition: all 0.2s;
+        }
+
+        /* NORMAL MODE FEATURE HOVER (When Picture/Read tools are ON) */
+        #sentence-box.features-on:not(.child-edit-active) .child-word:hover {
+            background-color: rgba(0, 188, 212, 0.15);
+            cursor: pointer;
+        }
+
+        /* EDIT MODE STYLES */
+        #sentence-box.child-edit-active .child-gap {
             display: inline-block;
             width: 20px;
             height: 28px;
@@ -174,47 +202,40 @@
             border-radius: 4px;
             cursor: pointer;
             vertical-align: middle;
-            transition: background 0.2s;
         }
-        .child-gap:hover { background-color: rgba(0, 0, 0, 0.15); }
+        #sentence-box.child-edit-active .child-gap:hover { background-color: rgba(0, 0, 0, 0.15); }
         
-        .child-word {
-            display: inline-block;
+        #sentence-box.child-edit-active .child-word {
             padding: 2px 6px;
             border-radius: 8px;
             cursor: pointer;
             border: 2px solid transparent;
-            transition: all 0.2s;
         }
-        .child-word:hover {
+        #sentence-box.child-edit-active .child-word:hover {
             background-color: rgba(255, 235, 59, 0.6);
             border-color: #fbc02d;
         }
 
-        .child-word.capital-error {
+        #sentence-box.child-edit-active .child-word.capital-error {
             background-color: #fce4ec;
             border-color: #f48fb1;
             color: #000;
         }
-        .child-word.capital-error:hover {
+        #sentence-box.child-edit-active .child-word.capital-error:hover {
             background-color: #f8bbd0;
             border-color: #f06292;
         }
 
-        .child-punct {
-            display: inline-block;
+        #sentence-box.child-edit-active .child-punct {
             padding: 2px 6px;
             margin: 0 1px;
             border-radius: 4px;
             cursor: pointer;
-            font-weight: 900;
-            color: #222222;
             background-color: rgba(0, 0, 0, 0.05);
             border: 2px solid transparent;
             vertical-align: middle;
-            transition: all 0.2s;
         }
-        .child-punct:hover {
+        #sentence-box.child-edit-active .child-punct:hover {
             background-color: rgba(0, 0, 0, 0.15);
         }
 
@@ -225,10 +246,6 @@
             transform: scale(1.1);
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
             z-index: 10;
-        }
-
-        #sentence-box.teacher-edit-active {
-            border: 4px solid #9c27b0 !important;
         }
 
         .right-panel {
@@ -335,23 +352,20 @@
         body.high-contrast #status { color: #00e5ff; }
         body.high-contrast .edit-header, body.high-contrast .color-tint-bar { background: #000000; border-color: #ffeb3b; }
         
-        body.high-contrast #sentence-box {
-            background-color: #1e1e1e !important;
-            color: #ffffff;
-            border: 4px solid #ffeb3b;
-        }
+        body.high-contrast #sentence-box { background-color: #1e1e1e !important; color: #ffffff; border: 4px solid #ffeb3b; }
         body.high-contrast #sentence-box.child-edit-active { border: 4px solid #00e5ff !important; }
         body.high-contrast #sentence-box.teacher-edit-active { border: 4px solid #ff5252 !important; }
         
-        body.high-contrast .child-gap { background-color: #333; }
-        body.high-contrast .child-gap:hover { background-color: #555; }
-        body.high-contrast .child-word:hover { background-color: #333; border-color: #ffeb3b; }
-        
-        body.high-contrast .child-word.capital-error { background-color: #5c0029; border-color: #ff80ab; color: white; }
-        body.high-contrast .child-word.capital-error:hover { background-color: #880e4f; border-color: #ff80ab; }
+        body.high-contrast #sentence-box.features-on:not(.child-edit-active) .child-word:hover { background-color: rgba(0, 229, 255, 0.3); }
 
-        body.high-contrast .child-punct { color: #ffffff; background-color: #333; }
-        body.high-contrast .child-punct:hover { background-color: #555; }
+        body.high-contrast #sentence-box.child-edit-active .child-gap { background-color: #333; }
+        body.high-contrast #sentence-box.child-edit-active .child-gap:hover { background-color: #555; }
+        body.high-contrast #sentence-box.child-edit-active .child-word:hover { background-color: #333; border-color: #ffeb3b; }
+        body.high-contrast #sentence-box.child-edit-active .child-word.capital-error { background-color: #5c0029; border-color: #ff80ab; color: white; }
+        body.high-contrast #sentence-box.child-edit-active .child-word.capital-error:hover { background-color: #880e4f; border-color: #ff80ab; }
+        body.high-contrast #sentence-box.child-edit-active .child-punct { color: #ffffff; background-color: #333; }
+        body.high-contrast #sentence-box.child-edit-active .child-punct:hover { background-color: #555; }
+        
         body.high-contrast .active-child-target { background-color: #000000 !important; border: 2px solid #00e5ff !important; color: #00e5ff !important; }
         body.high-contrast button { border: 2px solid #ffffff; }
 
@@ -391,7 +405,6 @@
         #confirm-teacher-btn { background-color: #9c27b0; color: white; box-shadow: 0 3px #7b1fa2; font-weight: bold; }
         .cancel-btn { background-color: #757575; color: white; box-shadow: 0 3px #424242; }
 
-        /* PICTURE TOOLTIP STYLES */
         #picture-tooltip {
             position: fixed;
             display: none;
@@ -540,7 +553,6 @@
 
         function isBadWord(word) {
             if (!word) return false;
-            // Clean punctuation off before checking
             const clean = word.toLowerCase().replace(/[^a-z]/g, '');
             return blockedWords.has(clean);
         }
@@ -643,7 +655,7 @@
         }
         
         function speakTextNaturally(text, rate = 0.9) {
-            if (!text || isBadWord(text)) return; // Safety check before speaking
+            if (!text || isBadWord(text)) return; 
             window.speechSynthesis.cancel(); 
             let utterance = new SpeechSynthesisUtterance(text);
             if (bestVoice) utterance.voice = bestVoice;
@@ -687,11 +699,20 @@
                 return text.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').trim();
             }
 
-            function updateSentenceText(newText) {
-                if (isEditMode) {
-                    renderChildSpans(newText);
+            // Centralized Feature Class Manager
+            function updateFeatureStyles() {
+                if (!isTeacherMode && (isHoverReadOn || isPictureHoverOn)) {
+                    sentenceBox.classList.add('features-on');
                 } else {
+                    sentenceBox.classList.remove('features-on');
+                }
+            }
+
+            function updateSentenceText(newText) {
+                if (isTeacherMode) {
                     sentenceBox.textContent = newText;
+                } else {
+                    renderChildSpans(newText);
                 }
                 localStorage.setItem('saved_voice_writer_text', newText);
             }
@@ -705,7 +726,7 @@
                 const gSpan = document.createElement('span');
                 gSpan.className = 'child-gap';
                 gSpan.textContent = ' '; 
-                gSpan.onclick = () => setActiveTarget(gSpan);
+                gSpan.onclick = () => { if (isEditMode) setActiveTarget(gSpan); };
                 return gSpan;
             }
 
@@ -716,20 +737,17 @@
 
             function bindWordHoverEvents(span, token) {
                 span.addEventListener('mouseenter', (e) => {
-                    if (isEditMode) {
-                        const cleanWord = token.toLowerCase().replace(/[^a-z]/g, '');
-                        
-                        // Safety filter: prevent interactions on typed bad words entirely
-                        if (isBadWord(cleanWord)) return;
+                    const cleanWord = token.toLowerCase().replace(/[^a-z]/g, '');
+                    
+                    if (isBadWord(cleanWord)) return;
 
-                        if (isHoverReadOn) speakTextNaturally(token, 0.85);
-                        
-                        if (isPictureHoverOn && nounDictionary[cleanWord]) {
-                            pictureTooltip.innerText = nounDictionary[cleanWord];
-                            pictureTooltip.style.display = 'block';
-                            pictureTooltip.style.left = e.clientX + 'px';
-                            pictureTooltip.style.top = e.clientY + 'px';
-                        }
+                    if (isHoverReadOn) speakTextNaturally(token, 0.85);
+                    
+                    if (isPictureHoverOn && nounDictionary[cleanWord]) {
+                        pictureTooltip.innerText = nounDictionary[cleanWord];
+                        pictureTooltip.style.display = 'block';
+                        pictureTooltip.style.left = e.clientX + 'px';
+                        pictureTooltip.style.top = e.clientY + 'px';
                     }
                 });
 
@@ -760,9 +778,7 @@
                     
                     if (isPunct) {
                         span.className = 'child-punct';
-                        if (/[.!?]/.test(token)) {
-                            capNext = true; 
-                        }
+                        if (/[.!?]/.test(token)) { capNext = true; }
                     } else {
                         span.className = 'child-word';
                         
@@ -778,15 +794,13 @@
                             } else {
                                 if (isCapitalized) hasError = true;
                             }
-                            if (hasError) {
-                                span.classList.add('capital-error');
-                            }
+                            if (hasError) { span.classList.add('capital-error'); }
                         }
                         capNext = false; 
                     }
                     
                     span.innerText = token;
-                    span.onclick = () => setActiveTarget(span);
+                    span.onclick = () => { if (isEditMode) setActiveTarget(span); };
                     
                     if (!isPunct) {
                         bindWordHoverEvents(span, token);
@@ -818,7 +832,6 @@
                     if (simpleFallbacks[fallbackIdx] !== baseWord) choices.add(simpleFallbacks[fallbackIdx]);
                     fallbackIdx++;
                 }
-                // Filter out bad words from approximations
                 return Array.from(choices).filter(w => !isBadWord(w)).slice(0, 3);
             }
 
@@ -856,6 +869,7 @@
                     hoverReadToggleBtn.style.backgroundColor = "#00acc1";
                     hoverReadToggleBtn.style.color = "#fff";
                 }
+                updateFeatureStyles();
             });
 
             pictureHoverToggleBtn.addEventListener('click', () => {
@@ -865,7 +879,7 @@
                     pictureHoverToggleBtn.style.backgroundColor = "#ff9800";
                     pictureHoverToggleBtn.style.color = "#000";
                     if (!isEditMode) {
-                        statusText.innerText = "Picture Hover enabled! Turn ON Edit Mode to use it.";
+                        statusText.innerText = "Picture Hover enabled! Hover over words to see pictures.";
                     }
                 } else {
                     pictureHoverToggleBtn.innerText = "🖼️ Picture Hover: OFF";
@@ -873,6 +887,7 @@
                     pictureHoverToggleBtn.style.color = "#fff";
                     pictureTooltip.style.display = 'none';
                 }
+                updateFeatureStyles();
             });
 
             function updateModes() {
@@ -881,7 +896,6 @@
                 if (isTeacherMode) {
                     sentenceBox.innerHTML = ''; 
                     sentenceBox.textContent = currentExtractedText; 
-                    
                     sentenceBox.contentEditable = "true";
                     sentenceBox.className = 'teacher-edit-active';
                     
@@ -896,7 +910,6 @@
                 } else if (isEditMode) {
                     sentenceBox.contentEditable = "false"; 
                     sentenceBox.className = 'child-edit-active';
-                    
                     renderChildSpans(currentExtractedText);
                     
                     editToggleBtn.innerText = "✏️ Edit Mode: ON";
@@ -907,11 +920,9 @@
                     capitalizeBtn.style.display = 'block'; 
                     statusText.innerText = "Edit Mode ON: Tap a word, punctuation, or gap!";
                 } else {
-                    sentenceBox.innerHTML = ''; 
-                    sentenceBox.textContent = currentExtractedText; 
-                    
                     sentenceBox.contentEditable = "false";
                     sentenceBox.className = '';
+                    renderChildSpans(currentExtractedText);
                     
                     editToggleBtn.innerText = "✏️ Edit Mode: OFF";
                     editToggleBtn.style.backgroundColor = "#00796b";
@@ -921,6 +932,7 @@
                     capitalizeBtn.style.display = 'none'; 
                     statusText.innerText = "Standard Mode: Text will go at the end.";
                 }
+                updateFeatureStyles();
             }
 
             editToggleBtn.addEventListener('click', () => {
@@ -1043,21 +1055,18 @@
                         const altWords = altTranscript.split(/\s+/);
                         if (altWords.length === phraseWords.length) {
                             let candidate = altWords[i];
-                            // Filter out profanity directly from the raw incoming transcript alternatives
                             if (!isBadWord(candidate)) {
                                 wordOptions.add(candidate);
                             }
                         }
                     }
                     
-                    // If the best phrase word wasn't added but it's safe, add it
                     if (wordOptions.size === 0 && !isBadWord(phraseWords[i])) {
                         wordOptions.add(phraseWords[i]);
                     }
                     
                     let optionsArray = Array.from(wordOptions);
                     
-                    // Generate safe approximations if we don't have enough options
                     if (optionsArray.length > 0 && optionsArray.length < 3) {
                         const approx = generateApproximations(optionsArray[0]);
                         approx.forEach(w => { 
@@ -1067,7 +1076,6 @@
                         });
                     }
 
-                    // Failsafe: If a word was completely blocked leaving 0 safe options, use a placeholder
                     if (optionsArray.length === 0) {
                         optionsArray.push("***");
                     }
@@ -1131,7 +1139,7 @@
                                 let wSpan = document.createElement('span');
                                 wSpan.className = 'child-word';
                                 wSpan.innerText = w;
-                                wSpan.onclick = () => setActiveTarget(wSpan);
+                                wSpan.onclick = () => { if (isEditMode) setActiveTarget(wSpan); };
                                 bindWordHoverEvents(wSpan, w);
                                 
                                 let newGap = createGapSpan();
@@ -1144,9 +1152,8 @@
                             activeEl.innerText = newWords;
                             activeEl.classList.remove('active-child-target');
                             
-                            // Re-bind hover with new word
                             let newSpan = activeEl.cloneNode(true);
-                            newSpan.onclick = () => setActiveTarget(newSpan);
+                            newSpan.onclick = () => { if (isEditMode) setActiveTarget(newSpan); };
                             bindWordHoverEvents(newSpan, newWords);
                             activeEl.parentNode.replaceChild(newSpan, activeEl);
                         }
@@ -1169,7 +1176,7 @@
                         return;
                     }
                 }
-                
+
                 let currentText = getCurrentText();
                 if (currentText.length > 0 && !currentText.endsWith(' ')) { currentText += " "; }
                 currentText += newWords;
@@ -1178,37 +1185,23 @@
 
             function addPunctuation(mark) {
                 saveStateToHistory();
-                
                 if (isEditMode) {
                     let activeEl = document.querySelector('.active-child-target');
                     if (activeEl) {
-                        if (activeEl.classList.contains('child-punct')) {
+                        if (activeEl.classList.contains('child-gap')) {
+                            let pSpan = document.createElement('span');
+                            pSpan.className = 'child-punct';
+                            pSpan.innerText = mark;
+                            pSpan.onclick = () => { if (isEditMode) setActiveTarget(pSpan); };
+                            sentenceBox.insertBefore(pSpan, activeEl.nextSibling);
+                            activeEl.classList.remove('active-child-target');
+                        } else if (activeEl.classList.contains('child-word') || activeEl.classList.contains('child-punct')) {
+                            activeEl.className = 'child-punct';
                             activeEl.innerText = mark;
                             activeEl.classList.remove('active-child-target');
-                            renderChildSpans(getCurrentText());
-                            return;
-                        } else if (activeEl.classList.contains('child-word')) {
-                            let pSpan = document.createElement('span');
-                            pSpan.className = 'child-punct';
-                            pSpan.innerText = mark;
-                            pSpan.onclick = () => setActiveTarget(pSpan);
-                            
-                            let nextGap = activeEl.nextSibling;
-                            sentenceBox.insertBefore(pSpan, nextGap);
-                            activeEl.classList.remove('active-child-target');
-                            renderChildSpans(getCurrentText());
-                            return;
-                        } else if (activeEl.classList.contains('child-gap')) {
-                            let pSpan = document.createElement('span');
-                            pSpan.className = 'child-punct';
-                            pSpan.innerText = mark;
-                            pSpan.onclick = () => setActiveTarget(pSpan);
-                            
-                            sentenceBox.insertBefore(pSpan, activeEl);
-                            activeEl.classList.remove('active-child-target');
-                            renderChildSpans(getCurrentText());
-                            return;
                         }
+                        renderChildSpans(getCurrentText());
+                        return;
                     }
                 } else if (isTeacherMode) {
                     sentenceBox.focus();
@@ -1226,67 +1219,52 @@
                         return;
                     }
                 }
-
+                
                 let currentText = getCurrentText();
                 currentText = currentText.trimEnd() + mark;
                 updateSentenceText(currentText);
             }
 
-            document.getElementById('comma-btn').addEventListener('click', () => addPunctuation(','));
-            document.getElementById('period-btn').addEventListener('click', () => addPunctuation('.'));
-            document.getElementById('question-btn').addEventListener('click', () => addPunctuation('?'));
-            document.getElementById('exclamation-btn').addEventListener('click', () => addPunctuation('!'));
-            document.getElementById('quote-btn').addEventListener('click', () => addPunctuation('"'));
-
-            document.addEventListener('keydown', (e) => {
-                if (isTeacherMode) return; 
-                
-                const validPunctuation = [',', '.', '?', '!', '"'];
-                if (validPunctuation.includes(e.key)) {
-                    e.preventDefault(); 
-                    addPunctuation(e.key);
-                }
-            });
-
-            document.getElementById('undo-action-btn').addEventListener('click', () => {
-                if (textHistory.length > 0) {
-                    const previousText = textHistory.pop();
-                    updateSentenceText(previousText);
-                    statusText.innerText = "Undo successful.";
-                } else {
-                    statusText.innerText = "Nothing to undo.";
-                }
-            });
+            document.getElementById('comma-btn').onclick = () => addPunctuation(',');
+            document.getElementById('period-btn').onclick = () => addPunctuation('.');
+            document.getElementById('question-btn').onclick = () => addPunctuation('?');
+            document.getElementById('exclamation-btn').onclick = () => addPunctuation('!');
+            document.getElementById('quote-btn').onclick = () => addPunctuation('"');
 
             document.getElementById('delete-btn').addEventListener('click', () => {
                 saveStateToHistory();
-                
                 if (isEditMode) {
                     let activeEl = document.querySelector('.active-child-target');
                     if (activeEl) {
-                        if (activeEl.classList.contains('child-word') || activeEl.classList.contains('child-punct')) {
-                            let nextGap = activeEl.nextElementSibling;
-                            if (nextGap && nextGap.classList.contains('child-gap')) {
-                                sentenceBox.removeChild(nextGap);
-                            }
-                            sentenceBox.removeChild(activeEl);
+                        if (!activeEl.classList.contains('child-gap')) {
+                            let prev = activeEl.previousSibling;
+                            if (prev && prev.classList.contains('child-gap')) prev.remove();
+                            activeEl.remove();
                             renderChildSpans(getCurrentText());
-                            statusText.innerText = "Deleted selection!";
-                            return;
+                        }
+                    } else {
+                        let nodes = Array.from(sentenceBox.childNodes);
+                        let i = nodes.length - 1;
+                        while (i >= 0 && (!nodes[i].classList || nodes[i].classList.contains('child-gap'))) { i--; }
+                        if (i >= 0) {
+                            if (nodes[i].previousSibling) nodes[i].previousSibling.remove();
+                            nodes[i].remove();
+                            renderChildSpans(getCurrentText());
                         }
                     }
-                }
-
-                let currentText = getCurrentText();
-                if (currentText.length > 0) {
-                    let lastSpace = currentText.lastIndexOf(' ');
-                    if (lastSpace > -1) {
-                        currentText = currentText.substring(0, lastSpace).trim();
+                } else if (isTeacherMode) {
+                    sentenceBox.focus();
+                    document.execCommand('delete', false, null);
+                    localStorage.setItem('saved_voice_writer_text', getCurrentText());
+                } else {
+                    let currentText = getCurrentText();
+                    let lastSpaceIndex = currentText.lastIndexOf(' ');
+                    if (lastSpaceIndex !== -1) {
+                        currentText = currentText.substring(0, lastSpaceIndex).trim();
                     } else {
-                        currentText = ""; 
+                        currentText = "";
                     }
                     updateSentenceText(currentText);
-                    statusText.innerText = "Deleted last word.";
                 }
             });
 
@@ -1297,76 +1275,93 @@
                         saveStateToHistory();
                         let text = activeEl.innerText;
                         let firstChar = text.charAt(0);
-                        
-                        if (firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase()) {
+                        if (firstChar === firstChar.toUpperCase()) {
                             activeEl.innerText = firstChar.toLowerCase() + text.slice(1);
                         } else {
                             activeEl.innerText = firstChar.toUpperCase() + text.slice(1);
                         }
                         renderChildSpans(getCurrentText());
                     } else {
-                        statusText.innerText = "Tap a word (yellow border) to change its capitalization!";
+                        statusText.innerText = "Tap a word to capitalize it first.";
                     }
                 }
             });
 
-            document.getElementById('read-sentence-btn').addEventListener('click', () => {
-                let currentText = getCurrentText();
-                if (currentText === "") {
-                    statusText.innerText = "Nothing to read yet!";
-                    return;
+            document.getElementById('undo-action-btn').addEventListener('click', () => {
+                if (textHistory.length > 0) {
+                    let previousState = textHistory.pop();
+                    updateSentenceText(previousState);
+                    statusText.innerText = "Undone!";
+                } else {
+                    statusText.innerText = "Nothing to undo.";
                 }
-                stopListeningCycle(); 
-                statusText.innerText = "🔊 Reading...";
-                loadBestVoice(); 
-                speakTextNaturally(currentText, 0.85); 
-            });
-
-            document.getElementById('copy-btn').addEventListener('click', () => {
-                let currentText = getCurrentText();
-                navigator.clipboard.writeText(currentText).then(() => {
-                    statusText.innerText = "Copied to clipboard!";
-                }).catch(err => {
-                    statusText.innerText = "Couldn't copy text.";
-                });
-            });
-
-            document.getElementById('print-btn').addEventListener('click', () => {
-                window.print();
             });
 
             const clearModal = document.getElementById('clear-modal');
+            const confirmClearBtn = document.getElementById('confirm-clear-btn');
+            const cancelClearBtn = document.getElementById('cancel-clear-btn');
             const restoreBtn = document.getElementById('restore-btn');
 
-            document.getElementById('clear-btn').addEventListener('click', () => { clearModal.style.display = 'flex'; });
-            document.getElementById('cancel-clear-btn').addEventListener('click', () => { clearModal.style.display = 'none'; });
+            document.getElementById('clear-btn').addEventListener('click', () => {
+                clearModal.style.display = 'flex';
+            });
 
-            document.getElementById('confirm-clear-btn').addEventListener('click', () => {
-                let currentText = getCurrentText();
-                if (currentText.trim() !== "") {
-                    backupText = currentText; 
-                    restoreBtn.style.display = 'inline-block'; 
-                }
-                
+            cancelClearBtn.addEventListener('click', () => { clearModal.style.display = 'none'; });
+
+            confirmClearBtn.addEventListener('click', () => {
+                backupText = getCurrentText();
                 updateSentenceText("");
-                textHistory = []; 
-                optionsContainer.innerHTML = '';
-                phraseQueue = [];
-                statusText.innerText = "Text cleared. Ready for a new story!";
+                textHistory = [];
+                restoreBtn.style.display = 'inline-block';
                 clearModal.style.display = 'none';
+                statusText.innerText = "Cleared. You can click 'Restore' if it was an accident.";
             });
 
             restoreBtn.addEventListener('click', () => {
-                if (backupText !== "") {
-                    saveStateToHistory();
-                    updateSentenceText(backupText);
-                    statusText.innerText = "Text restored!";
-                    restoreBtn.style.display = 'none'; 
-                    backupText = ""; 
+                updateSentenceText(backupText);
+                restoreBtn.style.display = 'none';
+                statusText.innerText = "Text restored!";
+            });
+
+            document.getElementById('copy-btn').addEventListener('click', () => {
+                let text = getCurrentText();
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        statusText.innerText = "Text Copied!";
+                    });
+                } else {
+                    let tempArea = document.createElement("textarea");
+                    tempArea.value = text;
+                    document.body.appendChild(tempArea);
+                    tempArea.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(tempArea);
+                    statusText.innerText = "Text Copied!";
+                }
+            });
+
+            document.getElementById('print-btn').addEventListener('click', () => {
+                let text = getCurrentText();
+                if (!text.trim()) {
+                    statusText.innerText = "Nothing to print!";
+                    return;
+                }
+                sentenceBox.innerText = text;
+                window.print();
+                updateSentenceText(text); 
+            });
+
+            document.getElementById('read-sentence-btn').addEventListener('click', () => {
+                warmUpMicrophoneHardware();
+                let textToRead = getCurrentText();
+                if (textToRead) {
+                    speakTextNaturally(textToRead, 0.9);
+                } else {
+                    statusText.innerText = "There is no text to read.";
                 }
             });
             
-            loadBestVoice();
+            updateModes(); 
         }
     </script>
 </body>
