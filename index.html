@@ -87,7 +87,7 @@
         }
 
         .color-tint-bar {
-            display: flex;
+            display: none; /* Hidden by default */
             justify-content: center;
             align-items: center;
             gap: 6px;
@@ -96,6 +96,12 @@
             border-radius: 10px;
             border: 2px solid #00796b;
             flex-wrap: wrap;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .tint-label {
@@ -417,12 +423,13 @@
         <!-- LEFT: Scrollable Sentence Box & Edit Bar -->
         <div class="left-panel">
             <div class="edit-header">
+                <button id="tint-toggle-btn" class="mode-btn" style="background-color: #0288d1;">🎨 Color: OFF</button>
                 <button id="edit-toggle-btn" class="mode-btn">✏️ Edit Mode: OFF</button>
                 <button id="teacher-toggle-btn" class="mode-btn">👩‍🏫 Teacher Mode: OFF</button>
             </div>
             
-            <!-- NEW: Dyslexia Tint Selector -->
-            <div class="color-tint-bar" title="Change Background Tint">
+            <!-- Collapsible Dyslexia Tint Selector -->
+            <div class="color-tint-bar" id="color-tint-bar" title="Change Background Tint">
                 <span class="tint-label">Tint:</span>
                 <button class="swatch-btn" data-color="#ffffff" style="background-color: #ffffff;" title="White"></button>
                 <button class="swatch-btn" data-color="#E6F2A2" style="background-color: #E6F2A2;" title="Celery"></button>
@@ -506,6 +513,7 @@
         let isAutoListening = false;
         let isListeningActive = false;
         
+        let isTintOpen = false;
         let isEditMode = false; 
         let isTeacherMode = false;
         let isHighContrast = false;
@@ -521,6 +529,8 @@
         // --- BACKGROUND TINT LOGIC --- //
         const rootVars = document.documentElement.style;
         const swatches = document.querySelectorAll('.swatch-btn');
+        const tintToggleBtn = document.getElementById('tint-toggle-btn');
+        const colorTintBar = document.getElementById('color-tint-bar');
         
         const savedTint = localStorage.getItem('dyslexia_bg_color') || '#ffffff';
         rootVars.setProperty('--box-bg', savedTint);
@@ -537,6 +547,19 @@
                 swatches.forEach(s => s.classList.remove('active-swatch'));
                 btn.classList.add('active-swatch');
             });
+        });
+
+        tintToggleBtn.addEventListener('click', () => {
+            isTintOpen = !isTintOpen;
+            if (isTintOpen) {
+                colorTintBar.style.display = 'flex';
+                tintToggleBtn.innerText = "🎨 Color: ON";
+                tintToggleBtn.style.backgroundColor = "#ff9800"; 
+            } else {
+                colorTintBar.style.display = 'none';
+                tintToggleBtn.innerText = "🎨 Color: OFF";
+                tintToggleBtn.style.backgroundColor = "#0288d1"; 
+            }
         });
 
         // --- NATURAL TTS VOICE SETUP --- //
