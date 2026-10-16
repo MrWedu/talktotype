@@ -120,7 +120,7 @@
         
         .child-gap {
             display: inline-block;
-            width: 22px;
+            width: 20px;
             height: 28px;
             margin: 0 2px;
             background-color: #e0f2f1;
@@ -144,9 +144,28 @@
             border-color: #fbc02d;
         }
 
+        /* SEPARATE PUNCTUATION SPAN STYLING */
+        .child-punct {
+            display: inline-block;
+            padding: 2px 8px;
+            margin: 0 1px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 900;
+            color: #1a237e;
+            background-color: #e8eaf6;
+            border: 2px solid #3f51b5;
+            transition: all 0.2s;
+        }
+        .child-punct:hover {
+            background-color: #c5cae9;
+            border-color: #1a237e;
+        }
+
         .active-child-target {
             background-color: #ffeb3b !important;
             border: 2px solid #f57f17 !important;
+            color: #000000 !important;
             transform: scale(1.1);
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
             z-index: 10;
@@ -270,15 +289,17 @@
         body.high-contrast .child-gap { background-color: #333; }
         body.high-contrast .child-gap:hover { background-color: #555; }
         body.high-contrast .child-word:hover { background-color: #333; border-color: #ffeb3b; }
+        body.high-contrast .child-punct {
+            color: #ffeb3b;
+            background-color: #263238;
+            border-color: #ffeb3b;
+        }
         body.high-contrast .active-child-target {
             background-color: #000000 !important;
             border: 2px solid #00e5ff !important;
-            color: #00e5ff;
+            color: #00e5ff !important;
         }
         body.high-contrast button {
-            border: 2px solid #ffffff;
-        }
-        body.high-contrast #contrast-toggle-btn {
             border: 2px solid #ffffff;
         }
 
@@ -517,19 +538,22 @@
                 el.classList.add('active-child-target');
             }
 
+            // Renders words, gaps AND punctuation separately
             function renderChildSpans(text) {
-                let cleanText = text.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').trim();
-                const words = cleanText.match(/\S+/g) || [];
+                let cleanText = text.replace(/\s+/g, ' ').trim();
+                // Tokenize words and punctuation individually
+                const tokens = cleanText.match(/[a-zA-Z0-9'’]+|[.,!?"']/g) || [];
                 
                 sentenceBox.innerHTML = '';
                 sentenceBox.appendChild(createGapSpan()); 
                 
-                words.forEach(word => {
-                    const wSpan = document.createElement('span');
-                    wSpan.className = 'child-word';
-                    wSpan.innerText = word;
-                    wSpan.onclick = () => setActiveTarget(wSpan);
-                    sentenceBox.appendChild(wSpan);
+                tokens.forEach(token => {
+                    const isPunct = /^[.,!?"']$/.test(token);
+                    const span = document.createElement('span');
+                    span.className = isPunct ? 'child-punct' : 'child-word';
+                    span.innerText = token;
+                    span.onclick = () => setActiveTarget(span);
+                    sentenceBox.appendChild(span);
                     
                     sentenceBox.appendChild(createGapSpan()); 
                 });
@@ -571,9 +595,9 @@
                     teacherToggleBtn.innerText = "👩‍🏫 Teacher Mode: OFF";
                     teacherToggleBtn.style.backgroundColor = "#00796b";
                     
-                    capitalizeBtn.style.display = 'block'; // Show capitalize button in flex container
+                    capitalizeBtn.style.display = 'block'; // Show capitalize button in Edit Mode
                     
-                    statusText.innerText = "Edit Mode ON: Tap a word or gap to insert text or punctuation there!";
+                    statusText.innerText = "Edit Mode ON: Tap a word, punctuation, or gap!";
                 } else {
                     sentenceBox.innerHTML = ''; 
                     sentenceBox.textContent = currentExtractedText; 
@@ -586,7 +610,7 @@
                     teacherToggleBtn.innerText = "👩‍🏫 Teacher Mode: OFF";
                     teacherToggleBtn.style.backgroundColor = "#00796b";
                     
-                    capitalizeBtn.style.display = 'none'; // Hide capitalize button
+                    capitalizeBtn.style.display = 'none'; 
                     
                     statusText.innerText = "Standard Mode: Text will go at the end.";
                 }
@@ -602,7 +626,6 @@
             const teacherModal = document.getElementById('teacher-modal');
             teacherToggleBtn.addEventListener('click', () => {
                 if (isTeacherMode) {
-                    // Turn off teacher mode directly
                     isTeacherMode = false;
                     updateModes();
                 } else {
@@ -754,7 +777,6 @@
                     let activeEl = document.querySelector('.active-child-target');
                     if (activeEl) {
                         if (activeEl.classList.contains('child-gap')) {
-                            // Insert into gap
                             let wordsArr = newWords.split(' ');
                             let nextEl = activeEl.nextSibling;
                             wordsArr.forEach(w => {
@@ -769,15 +791,15 @@
                                 sentenceBox.insertBefore(newGap, nextEl);
                             });
                             activeEl.classList.remove('active-child-target');
-                        } else if (activeEl.classList.contains('child-word')) {
-                            // Replace word
+                        } else if (activeEl.classList.contains('child-word') || activeEl.classList.contains('child-punct')) {
+                            // Replace word or punctuation
+                            activeEl.className = 'child-word';
                             activeEl.innerText = newWords;
                             activeEl.classList.remove('active-child-target');
                         }
-                        localStorage.setItem('saved_voice_writer_text', getCurrentText());
+                        renderChildSpans(getCurrentText());
                         return;
                     }
-                    // If no target, fall through to append
                 } else if (isTeacherMode) {
                     sentenceBox.focus();
                     let selection = window.getSelection();
@@ -813,25 +835,40 @@
                 if (isEditMode) {
                     let activeEl = document.querySelector('.active-child-target');
                     if (activeEl) {
-                        if (activeEl.classList.contains('child-gap')) {
-                            let prevWord = activeEl.previousElementSibling;
-                            if (prevWord && prevWord.classList.contains('child-word')) {
-                                prevWord.innerText += mark;
-                            } else {
-                                let wSpan = document.createElement('span');
-                                wSpan.className = 'child-word';
-                                wSpan.innerText = mark;
-                                wSpan.onclick = () => setActiveTarget(wSpan);
-                                sentenceBox.insertBefore(wSpan, activeEl);
-                                
-                                let newGap = createGapSpan();
-                                sentenceBox.insertBefore(newGap, activeEl);
-                            }
+                        if (activeEl.classList.contains('child-punct')) {
+                            // Replace punctuation directly!
+                            activeEl.innerText = mark;
+                            activeEl.classList.remove('active-child-target');
+                            renderChildSpans(getCurrentText());
+                            statusText.innerText = "Punctuation changed!";
+                            return;
                         } else if (activeEl.classList.contains('child-word')) {
-                            activeEl.innerText += mark;
+                            // Append punctuation right after the word
+                            let pSpan = document.createElement('span');
+                            pSpan.className = 'child-punct';
+                            pSpan.innerText = mark;
+                            pSpan.onclick = () => setActiveTarget(pSpan);
+                            
+                            let nextGap = activeEl.nextSibling;
+                            sentenceBox.insertBefore(pSpan, nextGap);
+                            
+                            activeEl.classList.remove('active-child-target');
+                            renderChildSpans(getCurrentText());
+                            statusText.innerText = "Punctuation added!";
+                            return;
+                        } else if (activeEl.classList.contains('child-gap')) {
+                            // Insert punctuation in gap
+                            let pSpan = document.createElement('span');
+                            pSpan.className = 'child-punct';
+                            pSpan.innerText = mark;
+                            pSpan.onclick = () => setActiveTarget(pSpan);
+                            
+                            sentenceBox.insertBefore(pSpan, activeEl);
+                            activeEl.classList.remove('active-child-target');
+                            renderChildSpans(getCurrentText());
+                            statusText.innerText = "Punctuation added!";
+                            return;
                         }
-                        localStorage.setItem('saved_voice_writer_text', getCurrentText());
-                        return;
                     }
                 } else if (isTeacherMode) {
                     sentenceBox.focus();
@@ -881,16 +918,16 @@
                 if (isEditMode) {
                     let activeEl = document.querySelector('.active-child-target');
                     if (activeEl) {
-                        if (activeEl.classList.contains('child-word')) {
+                        if (activeEl.classList.contains('child-word') || activeEl.classList.contains('child-punct')) {
                             let nextGap = activeEl.nextElementSibling;
                             if (nextGap && nextGap.classList.contains('child-gap')) {
                                 sentenceBox.removeChild(nextGap);
                             }
                             sentenceBox.removeChild(activeEl);
-                            localStorage.setItem('saved_voice_writer_text', getCurrentText());
+                            renderChildSpans(getCurrentText());
+                            statusText.innerText = "Deleted selection!";
+                            return;
                         }
-                        statusText.innerText = "Deleted target.";
-                        return;
                     }
                 }
 
@@ -916,17 +953,14 @@
                         let text = activeEl.innerText;
                         let firstChar = text.charAt(0);
                         
-                        // Check if it's already uppercase
                         if (firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase()) {
-                            // Un-capitalize it (make lowercase)
                             activeEl.innerText = firstChar.toLowerCase() + text.slice(1);
                             statusText.innerText = "Un-capitalized word.";
                         } else {
-                            // Capitalize it
                             activeEl.innerText = firstChar.toUpperCase() + text.slice(1);
                             statusText.innerText = "Capitalized word.";
                         }
-                        localStorage.setItem('saved_voice_writer_text', getCurrentText());
+                        renderChildSpans(getCurrentText());
                     } else {
                         statusText.innerText = "Tap a word (yellow border) to change its capitalization!";
                     }
