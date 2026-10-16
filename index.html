@@ -144,22 +144,22 @@
             border-color: #fbc02d;
         }
 
-        /* SEPARATE PUNCTUATION SPAN STYLING */
+        /* SEPARATE PUNCTUATION SPAN STYLING (Soft look matching blank spaces) */
         .child-punct {
             display: inline-block;
-            padding: 2px 8px;
+            padding: 2px 6px;
             margin: 0 1px;
-            border-radius: 8px;
+            border-radius: 4px;
             cursor: pointer;
             font-weight: 900;
-            color: #1a237e;
-            background-color: #e8eaf6;
-            border: 2px solid #3f51b5;
+            color: #222222;
+            background-color: #e0f2f1;
+            border: 2px solid transparent;
+            vertical-align: middle;
             transition: all 0.2s;
         }
         .child-punct:hover {
-            background-color: #c5cae9;
-            border-color: #1a237e;
+            background-color: #b2dfdb;
         }
 
         .active-child-target {
@@ -290,9 +290,11 @@
         body.high-contrast .child-gap:hover { background-color: #555; }
         body.high-contrast .child-word:hover { background-color: #333; border-color: #ffeb3b; }
         body.high-contrast .child-punct {
-            color: #ffeb3b;
-            background-color: #263238;
-            border-color: #ffeb3b;
+            color: #ffffff;
+            background-color: #333;
+        }
+        body.high-contrast .child-punct:hover {
+            background-color: #555;
         }
         body.high-contrast .active-child-target {
             background-color: #000000 !important;
