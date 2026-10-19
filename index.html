@@ -853,7 +853,7 @@
                 });
             }
 
-            // --- EXPANDED OFFLINE GRAMMAR & STRUCTURE ENGINE --- //
+            // --- EXPANDED & FIXED GRAMMAR & SUBORDINATING CLAUSE ENGINE --- //
             function renderChildSpans(text) {
                 let cleanText = text.replace(/\s+/g, ' ').trim();
                 const tokens = cleanText.match(/[a-zA-Z0-9'’]+|[.,!?"']/g) || [];
@@ -863,38 +863,45 @@
                 
                 let capNext = true;
 
-                // Pre-scan for Run-On Sentences & Unpunctuated Clause Boundaries
-                const conjunctions = ['and', 'but', 'so', 'because', 'or', 'then'];
+                // Pre-scan for Run-On Sentences
+                const coordinatingConjunctions = ['and', 'but', 'so', 'or', 'then'];
+                const subordinatingConjunctions = ['while', 'when', 'because', 'although', 'since', 'as', 'if'];
+                
                 let currentConjCount = 0;
                 let currentSentenceIndices = [];
                 let runOnIndices = new Set();
                 let clauseSubjectIndices = new Set();
 
-                const subjects = ['i', 'he', 'she', 'it', 'we', 'they', 'cerberus', 'my friend', 'the dog', 'the cat'];
-                let seenSubjectInClause = false;
+                const subjects = ['i', 'he', 'she', 'it', 'we', 'they', 'cerberus'];
 
-                tokens.forEach((t, i) => {
-                    const lowerT = t.toLowerCase();
-                    if (/^[.,!?]$/.test(t)) {
+                for (let i = 0; i < tokens.length; i++) {
+                    const lowerT = tokens[i].toLowerCase();
+                    
+                    if (/^[.,!?]$/.test(tokens[i])) {
                         if (currentConjCount >= 3) {
                             currentSentenceIndices.forEach(idx => runOnIndices.add(idx));
                         }
                         currentConjCount = 0;
                         currentSentenceIndices = [];
-                        seenSubjectInClause = false;
                     } else {
-                        if (conjunctions.includes(lowerT)) {
+                        if (coordinatingConjunctions.includes(lowerT)) {
                             currentConjCount++;
                             currentSentenceIndices.push(i);
                         }
-                        if (subjects.includes(lowerT)) {
-                            if (seenSubjectInClause && i > 0 && !/^[.,!?]$/.test(tokens[i - 1])) {
+
+                        // Check for run-on clause boundaries (e.g. "I went on a run I saw a dog")
+                        // EXEMPT if preceded by a subordinating conjunction ("while I...", "because he...")
+                        if (subjects.includes(lowerT) && i > 0) {
+                            const prevToken = tokens[i - 1].toLowerCase();
+                            const isPrecededByConjunction = coordinatingConjunctions.includes(prevToken) || subordinatingConjunctions.includes(prevToken);
+                            const isPrecededByPunct = /^[.,!?]$/.test(tokens[i - 1]);
+
+                            if (!isPrecededByConjunction && !isPrecededByPunct && i > 1) {
                                 clauseSubjectIndices.add(i);
                             }
-                            seenSubjectInClause = true;
                         }
                     }
-                });
+                }
 
                 if (currentConjCount >= 3) {
                     currentSentenceIndices.forEach(idx => runOnIndices.add(idx));
@@ -1016,7 +1023,7 @@
                             activeHint = "Did you mean <strong>'off'</strong> (with two f's)?";
                         }
 
-                        // Rule I: Run-On Sentences & Missing Clause Breaks
+                        // Rule I: Run-On Sentences & Unpunctuated Clause Boundaries
                         if (clauseSubjectIndices.has(idx)) {
                             hasGrammarError = true;
                             activeHint = "Looks like a new sentence starts here! Put a full stop (.) before '" + token + "'.";
