@@ -421,6 +421,7 @@
         #confirm-teacher-btn { background-color: #9c27b0; color: white; box-shadow: 0 3px #7b1fa2; font-weight: bold; }
         .cancel-btn { background-color: #757575; color: white; box-shadow: 0 3px #424242; }
 
+        /* PICTURE TOOLTIP */
         #picture-tooltip {
             position: fixed;
             display: none;
@@ -433,6 +434,27 @@
             z-index: 9999;
             pointer-events: none;
             transform: translate(-50%, -110%);
+        }
+
+        /* CHILD-FRIENDLY GRAMMAR HINT TOOLTIP */
+        #grammar-tooltip {
+            position: fixed;
+            display: none;
+            background: #fff8e1;
+            border: 4px solid #ff9800;
+            border-radius: 16px;
+            padding: 14px 18px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            font-size: 20px;
+            font-weight: 600;
+            color: #222222;
+            z-index: 9999;
+            pointer-events: none;
+            max-width: 320px;
+            line-height: 1.4;
+            transform: translate(-50%, -120%);
+            animation: popIn 0.15s ease-out;
+            text-align: center;
         }
 
         @keyframes popIn {
@@ -450,7 +472,7 @@
 
         @media print {
             body { background-color: white !important; padding: 0 !important; margin: 0 !important; height: auto !important; overflow: visible !important; color: black !important; }
-            h1, .right-panel, .edit-header, .color-tint-bar, .modal-overlay, #status, #contrast-toggle-btn, #picture-tooltip { display: none !important; }
+            h1, .right-panel, .edit-header, .color-tint-bar, .modal-overlay, #status, #contrast-toggle-btn, #picture-tooltip, #grammar-tooltip { display: none !important; }
             .app-container { display: block !important; max-width: 100% !important; height: auto !important; }
             .left-panel { width: 100% !important; height: auto !important; }
             #sentence-box {
@@ -533,8 +555,9 @@
         </div>
     </div>
 
-    <!-- Floating Tooltip for Nouns & Verbs -->
+    <!-- Floating Tooltips -->
     <div id="picture-tooltip"></div>
+    <div id="grammar-tooltip"></div>
 
     <!-- MODALS -->
     <div id="clear-modal" class="modal-overlay" style="display: none;">
@@ -573,7 +596,7 @@
             return blockedWords.has(clean);
         }
 
-        // --- SHUFFLE HELPER (Randomize Option Positions) --- //
+        // --- SHUFFLE HELPER --- //
         function shuffleArray(arr) {
             let shuffled = [...arr];
             for (let i = shuffled.length - 1; i > 0; i--) {
@@ -602,9 +625,8 @@
         let backupText = ""; 
         let textHistory = [];
 
-        // --- PICTURE DICTIONARY (Nouns & Verbs) --- //
+        // --- PICTURE DICTIONARY --- //
         const pictureDictionary = {
-            // Nouns
             "dog": "🐶", "dogs": "🐶", "puppy": "🐶",
             "cat": "🐱", "cats": "🐱", "kitten": "🐱",
             "car": "🚗", "cars": "🚗", "truck": "🛻",
@@ -627,7 +649,6 @@
             "eye": "👁️", "eyes": "👀", "hand": "✋",
             "heart": "❤️", "love": "❤️",
 
-            // Verbs
             "run": "🏃", "running": "🏃", "ran": "🏃",
             "walk": "🚶", "walking": "🚶", "walked": "🚶",
             "jump": "🦘", "jumping": "🦘", "jumped": "🦘",
@@ -659,6 +680,7 @@
         };
 
         const pictureTooltip = document.getElementById('picture-tooltip');
+        const grammarTooltip = document.getElementById('grammar-tooltip');
 
         // --- BACKGROUND TINT LOGIC --- //
         const rootVars = document.documentElement.style;
@@ -791,7 +813,7 @@
                 el.classList.add('active-child-target');
             }
 
-            function bindWordHoverEvents(span, token) {
+            function bindWordHoverEvents(span, token, hintMessage) {
                 span.addEventListener('mouseenter', (e) => {
                     const cleanWord = token.toLowerCase().replace(/[^a-z]/g, '');
                     
@@ -805,6 +827,13 @@
                         pictureTooltip.style.left = e.clientX + 'px';
                         pictureTooltip.style.top = e.clientY + 'px';
                     }
+
+                    if (hintMessage && isEditMode) {
+                        grammarTooltip.innerHTML = "<div>💡 <strong>Friendly Tip:</strong></div>" + hintMessage;
+                        grammarTooltip.style.display = 'block';
+                        grammarTooltip.style.left = e.clientX + 'px';
+                        grammarTooltip.style.top = e.clientY + 'px';
+                    }
                 });
 
                 span.addEventListener('mousemove', (e) => {
@@ -812,14 +841,19 @@
                         pictureTooltip.style.left = e.clientX + 'px';
                         pictureTooltip.style.top = e.clientY + 'px';
                     }
+                    if (grammarTooltip.style.display === 'block') {
+                        grammarTooltip.style.left = e.clientX + 'px';
+                        grammarTooltip.style.top = e.clientY + 'px';
+                    }
                 });
 
                 span.addEventListener('mouseleave', () => {
                     pictureTooltip.style.display = 'none';
+                    grammarTooltip.style.display = 'none';
                 });
             }
 
-            // --- RENDER WORD SPANS WITH ENHANCED GRAMMAR, VERB & RUN-ON CHECKS --- //
+            // --- EXPANDED OFFLINE GRAMMAR & STRUCTURE ENGINE --- //
             function renderChildSpans(text) {
                 let cleanText = text.replace(/\s+/g, ' ').trim();
                 const tokens = cleanText.match(/[a-zA-Z0-9'’]+|[.,!?"']/g) || [];
@@ -829,14 +863,14 @@
                 
                 let capNext = true;
 
-                // Pre-scan for Run-On Sentences (Count conjunctions and detect double clauses missing punctuation)
-                const conjunctions = ['and', 'but', 'so', 'because', 'or'];
+                // Pre-scan for Run-On Sentences & Unpunctuated Clause Boundaries
+                const conjunctions = ['and', 'but', 'so', 'because', 'or', 'then'];
                 let currentConjCount = 0;
                 let currentSentenceIndices = [];
                 let runOnIndices = new Set();
                 let clauseSubjectIndices = new Set();
 
-                const subjects = ['i', 'he', 'she', 'it', 'we', 'they', 'cerberus'];
+                const subjects = ['i', 'he', 'she', 'it', 'we', 'they', 'cerberus', 'my friend', 'the dog', 'the cat'];
                 let seenSubjectInClause = false;
 
                 tokens.forEach((t, i) => {
@@ -853,7 +887,6 @@
                             currentConjCount++;
                             currentSentenceIndices.push(i);
                         }
-                        // Check for run-on clauses (e.g., "I went on a walk I went on a run")
                         if (subjects.includes(lowerT)) {
                             if (seenSubjectInClause && i > 0 && !/^[.,!?]$/.test(tokens[i - 1])) {
                                 clauseSubjectIndices.add(i);
@@ -883,6 +916,8 @@
                         let isCapitalized = (firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase());
                         let isI = /^i(['’][a-z]+)?$/i.test(token);
                         
+                        let activeHint = "";
+
                         // 1. Capitalization Checking
                         if (isLetter) {
                             let hasCapError = false;
@@ -893,17 +928,16 @@
                             }
                             if (hasCapError) { 
                                 span.classList.add('capital-error'); 
-                                span.title = "🔠 Hint: Sentences and 'I' should start with a capital letter!";
+                                activeHint = "Sentences and 'I' should start with a capital letter!";
                             }
                         }
                         capNext = false; 
 
-                        // 2. Real-Time UK Primary Grammar, Verb Conjugation & Run-on Checking
+                        // 2. Offline Primary Grammar, Verb Tense & Structural Matrix
                         let hasGrammarError = false;
-                        let grammarTip = "";
                         const cleanToken = token.toLowerCase();
 
-                        // Get Next Word
+                        // Lookahead Next Word
                         let nextWord = null;
                         for (let j = idx + 1; j < tokens.length; j++) {
                             if (!/^[.,!?"']$/.test(tokens[j])) {
@@ -912,7 +946,7 @@
                             }
                         }
 
-                        // Get Previous Word
+                        // Lookback Previous Word
                         let prevWord = null;
                         for (let j = idx - 1; j >= 0; j--) {
                             if (!/^[.,!?"']$/.test(tokens[j])) {
@@ -924,53 +958,74 @@
                         // Rule A: Verb Conjugation - "I were" vs "I was"
                         if (cleanToken === 'were' && prevWord === 'i') {
                             hasGrammarError = true;
-                            grammarTip = "💬 Hint: In UK English, we write 'I was' instead of 'I were'!";
+                            activeHint = "In UK English, we write <strong>'I was'</strong> instead of 'I were'!";
                         } 
                         // Rule B: Verb Conjugation - "we/they/you was" vs "were"
                         else if (cleanToken === 'was' && prevWord && ['we', 'they', 'you'].includes(prevWord)) {
                             hasGrammarError = true;
-                            grammarTip = "💬 Hint: Write '" + prevWord + " were' instead of 'was'!";
+                            activeHint = "Write <strong>'" + prevWord + " were'</strong> instead of 'was'!";
                         } 
-                        // Rule C: Verb Conjugation - "sneaks" vs "snuck" in past context
-                        else if (cleanToken === 'sneaks' || (cleanToken === 'sneak' && prevWord && ['went', 'saw', 'ran', 'walked', 'cerberus'].includes(prevWord))) {
+                        // Rule C: Irregular Past Tense Shift - "sneaks/sneak" vs "snuck"
+                        else if (cleanToken === 'sneaks' || (cleanToken === 'sneak' && prevWord && ['went', 'saw', 'ran', 'walked', 'cerberus', 'had'].includes(prevWord))) {
                             hasGrammarError = true;
-                            grammarTip = "💬 Hint: For a past action, try using 'snuck' instead of 'sneaks'!";
+                            activeHint = "For a past action, try using <strong>'snuck'</strong> instead of 'sneaks'!";
                         } 
-                        // Rule D: Verb Conjugation - "I seen" vs "I saw"
+                        // Rule D: Spoken Dialect Forms - "I seen" / "I done"
                         else if (cleanToken === 'seen' && prevWord === 'i') {
                             hasGrammarError = true;
-                            grammarTip = "👀 Hint: Write 'I saw' or 'I have seen'!";
+                            activeHint = "Write <strong>'I saw'</strong> or <strong>'I have seen'</strong>!";
+                        } else if (cleanToken === 'done' && prevWord === 'i') {
+                            hasGrammarError = true;
+                            activeHint = "Write <strong>'I did'</strong> or <strong>'I have done'</strong>!";
+                        } else if (cleanToken === 'goes' && prevWord && ['they', 'we'].includes(prevWord)) {
+                            hasGrammarError = true;
+                            activeHint = "Write <strong>'" + prevWord + " went'</strong> or <strong>'go'</strong>!";
                         }
 
-                        // Rule E: A vs An
-                        if (cleanToken === 'a' && nextWord && /^[aeiou]/.test(nextWord)) {
+                        // Rule E: Subject-Verb Mismatch - "friend go" / "dogs is"
+                        else if (cleanToken === 'go' && prevWord === 'friend') {
                             hasGrammarError = true;
-                            grammarTip = "🍎 Hint: Use 'an' before vowel sounds (e.g., 'an apple')!";
-                        } else if (cleanToken === 'an' && nextWord && /^[bcdfghjklmnpqrstvwxyz]/.test(nextWord)) {
+                            activeHint = "Write <strong>'my friend goes'</strong> or <strong>'went'</strong>!";
+                        } else if (cleanToken === 'is' && prevWord && ['dogs', 'cats', 'cars', 'friends', 'they', 'we'].includes(prevWord)) {
                             hasGrammarError = true;
-                            grammarTip = "🐱 Hint: Use 'a' before consonant sounds (e.g., 'a cat')!";
+                            activeHint = "When talking about more than one, write <strong>'are'</strong> or <strong>'were'</strong>!";
                         }
 
-                        // Rule F: Missing Words
+                        // Rule F: A vs An Articles
+                        if (cleanToken === 'a' && nextWord && (/^[aeiou]/.test(nextWord) || nextWord === 'hour')) {
+                            hasGrammarError = true;
+                            activeHint = "Use <strong>'an'</strong> before vowel sounds (e.g., 'an apple', 'an hour')!";
+                        } else if (cleanToken === 'an' && nextWord && /^[bcdfghjklmnpqrstvwxyz]/.test(nextWord) && nextWord !== 'hour') {
+                            hasGrammarError = true;
+                            activeHint = "Use <strong>'a'</strong> before consonant sounds (e.g., 'a cat')!";
+                        }
+
+                        // Rule G: Missing Prepositions ("going park")
                         const places = ['park', 'school', 'shop', 'beach', 'zoo', 'house', 'garden', 'cinema'];
                         if (['going', 'went', 'walked', 'ran'].includes(cleanToken) && places.includes(nextWord)) {
                             hasGrammarError = true;
-                            grammarTip = "🔍 Hint: You might be missing 'to the' before '" + nextWord + "'!";
+                            activeHint = "You might be missing <strong>'to the'</strong> before '" + nextWord + "'!";
                         } else if (cleanToken === 'i' && ['going', 'playing', 'eating', 'running', 'walking'].includes(nextWord)) {
                             hasGrammarError = true;
-                            grammarTip = "🔍 Hint: You might be missing 'am' or 'was' after 'I'!";
+                            activeHint = "You might be missing <strong>'am'</strong> or <strong>'was'</strong> after 'I'!";
                         }
 
-                        // Rule G: Run-on Sentence Detection
+                        // Rule H: Common Homophone Swaps ("went of the slide")
+                        if (cleanToken === 'of' && prevWord && ['fell', 'jumped', 'ran', 'went', 'got'].includes(prevWord)) {
+                            hasGrammarError = true;
+                            activeHint = "Did you mean <strong>'off'</strong> (with two f's)?";
+                        }
+
+                        // Rule I: Run-On Sentences & Missing Clause Breaks
                         if (clauseSubjectIndices.has(idx)) {
                             hasGrammarError = true;
-                            grammarTip = "🛑 Hint: Looks like a new sentence starts here! Put a full stop (.) before '" + token + "'.";
+                            activeHint = "Looks like a new sentence starts here! Put a full stop (.) before '" + token + "'.";
                         } else if (runOnIndices.has(idx)) {
                             hasGrammarError = true;
-                            grammarTip = "🏃‍♂️ Hint: Long sentence! Try splitting it into two with a full stop (.)";
+                            activeHint = "Long sentence! Try splitting it into two shorter sentences with a full stop (.)";
                         }
 
-                        // Rule H: Missing Ending Punctuation
+                        // Rule J: Missing Sentence Ending Punctuation
                         let isLastWord = true;
                         for (let j = idx + 1; j < tokens.length; j++) {
                             if (!/^[.,!?"']$/.test(tokens[j])) {
@@ -982,21 +1037,18 @@
                             const lastTokenOverall = tokens[tokens.length - 1];
                             if (!/[.!?]/.test(lastTokenOverall)) {
                                 hasGrammarError = true;
-                                grammarTip = "✏️ Hint: Remember a full stop (.), question mark (?), or exclamation mark (!) at the end!";
+                                activeHint = "Remember a full stop (.), question mark (?), or exclamation mark (!) at the end!";
                             }
                         }
 
                         if (hasGrammarError) {
                             span.classList.add('grammar-error');
-                            span.title = grammarTip;
                         }
-                    }
-                    
-                    span.innerText = token;
-                    span.onclick = () => { if (isEditMode) setActiveTarget(span); };
-                    
-                    if (!isPunct) {
-                        bindWordHoverEvents(span, token);
+
+                        span.innerText = token;
+                        span.onclick = () => { if (isEditMode) setActiveTarget(span); };
+                        
+                        bindWordHoverEvents(span, token, activeHint);
                     }
 
                     sentenceBox.appendChild(span);
@@ -1356,7 +1408,7 @@
                                 wSpan.className = 'child-word';
                                 wSpan.innerText = w;
                                 wSpan.onclick = () => { if (isEditMode) setActiveTarget(wSpan); };
-                                bindWordHoverEvents(wSpan, w);
+                                bindWordHoverEvents(wSpan, w, "");
                                 
                                 let newGap = createGapSpan();
                                 sentenceBox.insertBefore(wSpan, nextEl);
@@ -1370,7 +1422,7 @@
                             
                             let newSpan = activeEl.cloneNode(true);
                             newSpan.onclick = () => { if (isEditMode) setActiveTarget(newSpan); };
-                            bindWordHoverEvents(newSpan, newWords);
+                            bindWordHoverEvents(newSpan, newWords, "");
                             activeEl.parentNode.replaceChild(newSpan, activeEl);
                         }
                         renderChildSpans(getCurrentText());
