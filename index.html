@@ -819,7 +819,7 @@
                 });
             }
 
-            // --- RENDER WORD SPANS WITH REAL-TIME GRAMMAR, MISSING WORD & RUN-ON CHECKS --- //
+            // --- RENDER WORD SPANS WITH ENHANCED GRAMMAR, VERB & RUN-ON CHECKS --- //
             function renderChildSpans(text) {
                 let cleanText = text.replace(/\s+/g, ' ').trim();
                 const tokens = cleanText.match(/[a-zA-Z0-9'’]+|[.,!?"']/g) || [];
@@ -829,28 +829,40 @@
                 
                 let capNext = true;
 
-                // Pre-scan for Run-On Sentences (Count conjunctions per sentence)
+                // Pre-scan for Run-On Sentences (Count conjunctions and detect double clauses missing punctuation)
                 const conjunctions = ['and', 'but', 'so', 'because', 'or'];
-                let sentenceConjunctionCounts = [];
                 let currentConjCount = 0;
                 let currentSentenceIndices = [];
                 let runOnIndices = new Set();
+                let clauseSubjectIndices = new Set();
+
+                const subjects = ['i', 'he', 'she', 'it', 'we', 'they', 'cerberus'];
+                let seenSubjectInClause = false;
 
                 tokens.forEach((t, i) => {
+                    const lowerT = t.toLowerCase();
                     if (/^[.,!?]$/.test(t)) {
                         if (currentConjCount >= 3) {
                             currentSentenceIndices.forEach(idx => runOnIndices.add(idx));
                         }
                         currentConjCount = 0;
                         currentSentenceIndices = [];
+                        seenSubjectInClause = false;
                     } else {
-                        if (conjunctions.includes(t.toLowerCase())) {
+                        if (conjunctions.includes(lowerT)) {
                             currentConjCount++;
                             currentSentenceIndices.push(i);
                         }
+                        // Check for run-on clauses (e.g., "I went on a walk I went on a run")
+                        if (subjects.includes(lowerT)) {
+                            if (seenSubjectInClause && i > 0 && !/^[.,!?]$/.test(tokens[i - 1])) {
+                                clauseSubjectIndices.add(i);
+                            }
+                            seenSubjectInClause = true;
+                        }
                     }
                 });
-                // Check trailing sentence if no ending punctuation
+
                 if (currentConjCount >= 3) {
                     currentSentenceIndices.forEach(idx => runOnIndices.add(idx));
                 }
@@ -881,12 +893,12 @@
                             }
                             if (hasCapError) { 
                                 span.classList.add('capital-error'); 
-                                span.title = "Capital Letter Tip: Sentences and 'I' should start with a capital letter.";
+                                span.title = "🔠 Hint: Sentences and 'I' should start with a capital letter!";
                             }
                         }
                         capNext = false; 
 
-                        // 2. Real-Time UK Primary Grammar & Structure Checking
+                        // 2. Real-Time UK Primary Grammar, Verb Conjugation & Run-on Checking
                         let hasGrammarError = false;
                         let grammarTip = "";
                         const cleanToken = token.toLowerCase();
@@ -909,44 +921,56 @@
                             }
                         }
 
-                        // Rule A: A vs An
+                        // Rule A: Verb Conjugation - "I were" vs "I was"
+                        if (cleanToken === 'were' && prevWord === 'i') {
+                            hasGrammarError = true;
+                            grammarTip = "💬 Hint: In UK English, we write 'I was' instead of 'I were'!";
+                        } 
+                        // Rule B: Verb Conjugation - "we/they/you was" vs "were"
+                        else if (cleanToken === 'was' && prevWord && ['we', 'they', 'you'].includes(prevWord)) {
+                            hasGrammarError = true;
+                            grammarTip = "💬 Hint: Write '" + prevWord + " were' instead of 'was'!";
+                        } 
+                        // Rule C: Verb Conjugation - "sneaks" vs "snuck" in past context
+                        else if (cleanToken === 'sneaks' || (cleanToken === 'sneak' && prevWord && ['went', 'saw', 'ran', 'walked', 'cerberus'].includes(prevWord))) {
+                            hasGrammarError = true;
+                            grammarTip = "💬 Hint: For a past action, try using 'snuck' instead of 'sneaks'!";
+                        } 
+                        // Rule D: Verb Conjugation - "I seen" vs "I saw"
+                        else if (cleanToken === 'seen' && prevWord === 'i') {
+                            hasGrammarError = true;
+                            grammarTip = "👀 Hint: Write 'I saw' or 'I have seen'!";
+                        }
+
+                        // Rule E: A vs An
                         if (cleanToken === 'a' && nextWord && /^[aeiou]/.test(nextWord)) {
                             hasGrammarError = true;
-                            grammarTip = "Grammar Tip: Use 'an' before words starting with a vowel sound (e.g., 'an apple').";
+                            grammarTip = "🍎 Hint: Use 'an' before vowel sounds (e.g., 'an apple')!";
                         } else if (cleanToken === 'an' && nextWord && /^[bcdfghjklmnpqrstvwxyz]/.test(nextWord)) {
                             hasGrammarError = true;
-                            grammarTip = "Grammar Tip: Use 'a' before words starting with a consonant sound (e.g., 'a cat').";
+                            grammarTip = "🐱 Hint: Use 'a' before consonant sounds (e.g., 'a cat')!";
                         }
 
-                        // Rule B: UK Spoken Verb Conventions
-                        if (cleanToken === 'was' && prevWord && ['we', 'they', 'you'].includes(prevWord)) {
-                            hasGrammarError = true;
-                            grammarTip = "Grammar Tip: In UK English, write '" + prevWord + " were' instead of 'was'.";
-                        } else if (cleanToken === 'seen' && prevWord === 'i') {
-                            hasGrammarError = true;
-                            grammarTip = "Grammar Tip: Write 'I saw' instead of 'I seen'.";
-                        }
-
-                        // Rule C: Missing Word Detection
+                        // Rule F: Missing Words
                         const places = ['park', 'school', 'shop', 'beach', 'zoo', 'house', 'garden', 'cinema'];
                         if (['going', 'went', 'walked', 'ran'].includes(cleanToken) && places.includes(nextWord)) {
                             hasGrammarError = true;
-                            grammarTip = "Missing Word Tip: You might be missing 'to the' before '" + nextWord + "'.";
+                            grammarTip = "🔍 Hint: You might be missing 'to the' before '" + nextWord + "'!";
                         } else if (cleanToken === 'i' && ['going', 'playing', 'eating', 'running', 'walking'].includes(nextWord)) {
                             hasGrammarError = true;
-                            grammarTip = "Missing Word Tip: You might be missing 'am' or 'was' after 'I'.";
-                        } else if (['we', 'they', 'you'].includes(cleanToken) && ['going', 'playing', 'eating', 'running'].includes(nextWord)) {
-                            hasGrammarError = true;
-                            grammarTip = "Missing Word Tip: You might be missing 'are' or 'were' after '" + token + "'.";
+                            grammarTip = "🔍 Hint: You might be missing 'am' or 'was' after 'I'!";
                         }
 
-                        // Rule D: Run-on Sentence Detection (conjunction overuse)
-                        if (runOnIndices.has(idx)) {
+                        // Rule G: Run-on Sentence Detection
+                        if (clauseSubjectIndices.has(idx)) {
                             hasGrammarError = true;
-                            grammarTip = "Run-on Sentence Tip: You have used lots of connecting words ('and/but/so') here! Try splitting this into two shorter sentences with a full stop.";
+                            grammarTip = "🛑 Hint: Looks like a new sentence starts here! Put a full stop (.) before '" + token + "'.";
+                        } else if (runOnIndices.has(idx)) {
+                            hasGrammarError = true;
+                            grammarTip = "🏃‍♂️ Hint: Long sentence! Try splitting it into two with a full stop (.)";
                         }
 
-                        // Rule E: Sentence End Punctuation
+                        // Rule H: Missing Ending Punctuation
                         let isLastWord = true;
                         for (let j = idx + 1; j < tokens.length; j++) {
                             if (!/^[.,!?"']$/.test(tokens[j])) {
@@ -958,7 +982,7 @@
                             const lastTokenOverall = tokens[tokens.length - 1];
                             if (!/[.!?]/.test(lastTokenOverall)) {
                                 hasGrammarError = true;
-                                grammarTip = "Punctuation Tip: Remember a full stop, question mark, or exclamation mark at the end.";
+                                grammarTip = "✏️ Hint: Remember a full stop (.), question mark (?), or exclamation mark (!) at the end!";
                             }
                         }
 
