@@ -819,7 +819,7 @@
                 });
             }
 
-            // --- RENDER WORD SPANS WITH REAL-TIME UK GRAMMAR & CAP CHECKS --- //
+            // --- RENDER WORD SPANS WITH REAL-TIME GRAMMAR, MISSING WORD & RUN-ON CHECKS --- //
             function renderChildSpans(text) {
                 let cleanText = text.replace(/\s+/g, ' ').trim();
                 const tokens = cleanText.match(/[a-zA-Z0-9'’]+|[.,!?"']/g) || [];
@@ -828,6 +828,32 @@
                 sentenceBox.appendChild(createGapSpan()); 
                 
                 let capNext = true;
+
+                // Pre-scan for Run-On Sentences (Count conjunctions per sentence)
+                const conjunctions = ['and', 'but', 'so', 'because', 'or'];
+                let sentenceConjunctionCounts = [];
+                let currentConjCount = 0;
+                let currentSentenceIndices = [];
+                let runOnIndices = new Set();
+
+                tokens.forEach((t, i) => {
+                    if (/^[.,!?]$/.test(t)) {
+                        if (currentConjCount >= 3) {
+                            currentSentenceIndices.forEach(idx => runOnIndices.add(idx));
+                        }
+                        currentConjCount = 0;
+                        currentSentenceIndices = [];
+                    } else {
+                        if (conjunctions.includes(t.toLowerCase())) {
+                            currentConjCount++;
+                            currentSentenceIndices.push(i);
+                        }
+                    }
+                });
+                // Check trailing sentence if no ending punctuation
+                if (currentConjCount >= 3) {
+                    currentSentenceIndices.forEach(idx => runOnIndices.add(idx));
+                }
                 
                 for (let idx = 0; idx < tokens.length; idx++) {
                     const token = tokens[idx];
@@ -860,12 +886,12 @@
                         }
                         capNext = false; 
 
-                        // 2. Real-Time UK Primary Grammar Checking
+                        // 2. Real-Time UK Primary Grammar & Structure Checking
                         let hasGrammarError = false;
                         let grammarTip = "";
                         const cleanToken = token.toLowerCase();
 
-                        // Rule A: A vs An
+                        // Get Next Word
                         let nextWord = null;
                         for (let j = idx + 1; j < tokens.length; j++) {
                             if (!/^[.,!?"']$/.test(tokens[j])) {
@@ -874,6 +900,16 @@
                             }
                         }
 
+                        // Get Previous Word
+                        let prevWord = null;
+                        for (let j = idx - 1; j >= 0; j--) {
+                            if (!/^[.,!?"']$/.test(tokens[j])) {
+                                prevWord = tokens[j].toLowerCase();
+                                break;
+                            }
+                        }
+
+                        // Rule A: A vs An
                         if (cleanToken === 'a' && nextWord && /^[aeiou]/.test(nextWord)) {
                             hasGrammarError = true;
                             grammarTip = "Grammar Tip: Use 'an' before words starting with a vowel sound (e.g., 'an apple').";
@@ -883,14 +919,6 @@
                         }
 
                         // Rule B: UK Spoken Verb Conventions
-                        let prevWord = null;
-                        for (let j = idx - 1; j >= 0; j--) {
-                            if (!/^[.,!?"']$/.test(tokens[j])) {
-                                prevWord = tokens[j].toLowerCase();
-                                break;
-                            }
-                        }
-
                         if (cleanToken === 'was' && prevWord && ['we', 'they', 'you'].includes(prevWord)) {
                             hasGrammarError = true;
                             grammarTip = "Grammar Tip: In UK English, write '" + prevWord + " were' instead of 'was'.";
@@ -899,7 +927,26 @@
                             grammarTip = "Grammar Tip: Write 'I saw' instead of 'I seen'.";
                         }
 
-                        // Rule C: Sentence End Punctuation
+                        // Rule C: Missing Word Detection
+                        const places = ['park', 'school', 'shop', 'beach', 'zoo', 'house', 'garden', 'cinema'];
+                        if (['going', 'went', 'walked', 'ran'].includes(cleanToken) && places.includes(nextWord)) {
+                            hasGrammarError = true;
+                            grammarTip = "Missing Word Tip: You might be missing 'to the' before '" + nextWord + "'.";
+                        } else if (cleanToken === 'i' && ['going', 'playing', 'eating', 'running', 'walking'].includes(nextWord)) {
+                            hasGrammarError = true;
+                            grammarTip = "Missing Word Tip: You might be missing 'am' or 'was' after 'I'.";
+                        } else if (['we', 'they', 'you'].includes(cleanToken) && ['going', 'playing', 'eating', 'running'].includes(nextWord)) {
+                            hasGrammarError = true;
+                            grammarTip = "Missing Word Tip: You might be missing 'are' or 'were' after '" + token + "'.";
+                        }
+
+                        // Rule D: Run-on Sentence Detection (conjunction overuse)
+                        if (runOnIndices.has(idx)) {
+                            hasGrammarError = true;
+                            grammarTip = "Run-on Sentence Tip: You have used lots of connecting words ('and/but/so') here! Try splitting this into two shorter sentences with a full stop.";
+                        }
+
+                        // Rule E: Sentence End Punctuation
                         let isLastWord = true;
                         for (let j = idx + 1; j < tokens.length; j++) {
                             if (!/^[.,!?"']$/.test(tokens[j])) {
