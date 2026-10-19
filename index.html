@@ -213,6 +213,7 @@
             border-color: #fbc02d;
         }
 
+        /* CAPITAL ERROR STYLING */
         #sentence-box.child-edit-active .child-word.capital-error {
             background-color: #fce4ec;
             border-color: #f48fb1;
@@ -221,6 +222,18 @@
         #sentence-box.child-edit-active .child-word.capital-error:hover {
             background-color: #f8bbd0;
             border-color: #f06292;
+        }
+
+        /* GRAMMAR ERROR STYLING (UK Primary Curriculum) */
+        #sentence-box.child-edit-active .child-word.grammar-error {
+            background-color: #f3e5f5;
+            border-color: #ba68c8;
+            text-decoration: underline wavy #7b1fa2;
+            color: #000;
+        }
+        #sentence-box.child-edit-active .child-word.grammar-error:hover {
+            background-color: #e1bee7;
+            border-color: #8e24aa;
         }
 
         #sentence-box.child-edit-active .child-punct {
@@ -358,8 +371,13 @@
         body.high-contrast #sentence-box.child-edit-active .child-gap { background-color: #333; }
         body.high-contrast #sentence-box.child-edit-active .child-gap:hover { background-color: #555; }
         body.high-contrast #sentence-box.child-edit-active .child-word:hover { background-color: #333; border-color: #ffeb3b; }
+        
         body.high-contrast #sentence-box.child-edit-active .child-word.capital-error { background-color: #5c0029; border-color: #ff80ab; color: white; }
         body.high-contrast #sentence-box.child-edit-active .child-word.capital-error:hover { background-color: #880e4f; border-color: #ff80ab; }
+
+        body.high-contrast #sentence-box.child-edit-active .child-word.grammar-error { background-color: #4a148c; border-color: #ea80fc; color: white; text-decoration: underline wavy #ea80fc; }
+        body.high-contrast #sentence-box.child-edit-active .child-word.grammar-error:hover { background-color: #6a1b9a; border-color: #ea80fc; }
+
         body.high-contrast #sentence-box.child-edit-active .child-punct { color: #ffffff; background-color: #333; }
         body.high-contrast #sentence-box.child-edit-active .child-punct:hover { background-color: #555; }
         
@@ -384,7 +402,7 @@
             padding: 25px;
             border-radius: 20px;
             border: 4px solid #d32f2f;
-            max-width: 420px;
+            max-width: 450px;
             width: 90%;
             box-shadow: 0 8px 16px rgba(0,0,0,0.3);
             text-align: center;
@@ -395,6 +413,7 @@
         .modal-box h2 { margin-top: 0; color: #d32f2f; font-size: 26px; }
         .teacher-modal-box h2 { color: #9c27b0; }
         .teacher-modal-box { border-color: #9c27b0; }
+
         .modal-box p { font-size: 18px; color: #333; margin-bottom: 20px; }
         .modal-buttons { display: flex; justify-content: center; gap: 12px; }
 
@@ -552,6 +571,16 @@
             if (!word) return false;
             const clean = word.toLowerCase().replace(/[^a-z]/g, '');
             return blockedWords.has(clean);
+        }
+
+        // --- SHUFFLE HELPER (Randomize Option Positions) --- //
+        function shuffleArray(arr) {
+            let shuffled = [...arr];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
         }
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -727,7 +756,6 @@
                 return text.replace(/\s+/g, ' ').replace(/\s+([.,!?])/g, '$1').trim();
             }
 
-            // Centralized Feature Class Manager
             function updateFeatureStyles() {
                 if (!isTeacherMode && (isHoverReadOn || isPictureHoverOn)) {
                     sentenceBox.classList.add('features-on');
@@ -791,6 +819,7 @@
                 });
             }
 
+            // --- RENDER WORD SPANS WITH REAL-TIME UK GRAMMAR & CAP CHECKS --- //
             function renderChildSpans(text) {
                 let cleanText = text.replace(/\s+/g, ' ').trim();
                 const tokens = cleanText.match(/[a-zA-Z0-9'’]+|[.,!?"']/g) || [];
@@ -800,7 +829,8 @@
                 
                 let capNext = true;
                 
-                tokens.forEach(token => {
+                for (let idx = 0; idx < tokens.length; idx++) {
+                    const token = tokens[idx];
                     const isPunct = /^[.,!?"']$/.test(token);
                     const span = document.createElement('span');
                     
@@ -815,16 +845,80 @@
                         let isCapitalized = (firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase());
                         let isI = /^i(['’][a-z]+)?$/i.test(token);
                         
+                        // 1. Capitalization Checking
                         if (isLetter) {
-                            let hasError = false;
+                            let hasCapError = false;
                             if (capNext || isI) {
-                                if (!isCapitalized) hasError = true;
+                                if (!isCapitalized) hasCapError = true;
                             } else {
-                                if (isCapitalized) hasError = true;
+                                if (isCapitalized) hasCapError = true;
                             }
-                            if (hasError) { span.classList.add('capital-error'); }
+                            if (hasCapError) { 
+                                span.classList.add('capital-error'); 
+                                span.title = "Capital Letter Tip: Sentences and 'I' should start with a capital letter.";
+                            }
                         }
                         capNext = false; 
+
+                        // 2. Real-Time UK Primary Grammar Checking
+                        let hasGrammarError = false;
+                        let grammarTip = "";
+                        const cleanToken = token.toLowerCase();
+
+                        // Rule A: A vs An
+                        let nextWord = null;
+                        for (let j = idx + 1; j < tokens.length; j++) {
+                            if (!/^[.,!?"']$/.test(tokens[j])) {
+                                nextWord = tokens[j].toLowerCase();
+                                break;
+                            }
+                        }
+
+                        if (cleanToken === 'a' && nextWord && /^[aeiou]/.test(nextWord)) {
+                            hasGrammarError = true;
+                            grammarTip = "Grammar Tip: Use 'an' before words starting with a vowel sound (e.g., 'an apple').";
+                        } else if (cleanToken === 'an' && nextWord && /^[bcdfghjklmnpqrstvwxyz]/.test(nextWord)) {
+                            hasGrammarError = true;
+                            grammarTip = "Grammar Tip: Use 'a' before words starting with a consonant sound (e.g., 'a cat').";
+                        }
+
+                        // Rule B: UK Spoken Verb Conventions
+                        let prevWord = null;
+                        for (let j = idx - 1; j >= 0; j--) {
+                            if (!/^[.,!?"']$/.test(tokens[j])) {
+                                prevWord = tokens[j].toLowerCase();
+                                break;
+                            }
+                        }
+
+                        if (cleanToken === 'was' && prevWord && ['we', 'they', 'you'].includes(prevWord)) {
+                            hasGrammarError = true;
+                            grammarTip = "Grammar Tip: In UK English, write '" + prevWord + " were' instead of 'was'.";
+                        } else if (cleanToken === 'seen' && prevWord === 'i') {
+                            hasGrammarError = true;
+                            grammarTip = "Grammar Tip: Write 'I saw' instead of 'I seen'.";
+                        }
+
+                        // Rule C: Sentence End Punctuation
+                        let isLastWord = true;
+                        for (let j = idx + 1; j < tokens.length; j++) {
+                            if (!/^[.,!?"']$/.test(tokens[j])) {
+                                isLastWord = false;
+                                break;
+                            }
+                        }
+                        if (isLastWord) {
+                            const lastTokenOverall = tokens[tokens.length - 1];
+                            if (!/[.!?]/.test(lastTokenOverall)) {
+                                hasGrammarError = true;
+                                grammarTip = "Punctuation Tip: Remember a full stop, question mark, or exclamation mark at the end.";
+                            }
+                        }
+
+                        if (hasGrammarError) {
+                            span.classList.add('grammar-error');
+                            span.title = grammarTip;
+                        }
                     }
                     
                     span.innerText = token;
@@ -836,11 +930,20 @@
 
                     sentenceBox.appendChild(span);
                     sentenceBox.appendChild(createGapSpan()); 
-                });
+                }
             }
 
             function generateApproximations(baseWord) {
-                const shortWordDb = { 'i': ['i', 'eye', 'a'], 'a': ['a', 'uh', 'ey'], 'my': ['my', 'me', 'mai'], 'me': ['me', 'my', 'may'], 'is': ['is', 'his', 'as'], 'it': ['it', 'at', 'if'], 'the': ['the', 'they', 'a'], 'to': ['to', 'two', 'too'] };
+                const shortWordDb = { 
+                    'i': ['i', 'eye', 'a'], 
+                    'a': ['a', 'uh', 'ey'], 
+                    'my': ['my', 'me', 'mai'], 
+                    'me': ['me', 'my', 'may'], 
+                    'is': ['is', 'his', 'as'], 
+                    'it': ['it', 'at', 'if'], 
+                    'the': ['the', 'they', 'a'], 
+                    'we': ['we', 'wee', 'way'] 
+                };
                 if (shortWordDb[baseWord.toLowerCase()]) return shortWordDb[baseWord.toLowerCase()].filter(w => !isBadWord(w));
                 
                 const phonetics = { 'th': ['f', 'v', 's'], 'r': ['w', 'l'], 'l': ['w', 'y'], 's': ['z', 'sh'], 'c': ['k', 's'], 'k': ['g', 'c'], 'p': ['b'], 't': ['d'] };
@@ -854,7 +957,7 @@
                 if (choices.size < 3 && baseWord.length > 3) choices.add(baseWord.slice(0, -1));
                 if (choices.size < 3) choices.add(baseWord + "e");
                 
-                const simpleFallbacks = ['my', 'a', 'i', 'the', 'is', 'it', 'to'];
+                const simpleFallbacks = ['my', 'a', 'i', 'the', 'is', 'it', 'we'];
                 let fallbackIdx = 0;
                 while (choices.size < 3 && fallbackIdx < simpleFallbacks.length) {
                     if (simpleFallbacks[fallbackIdx] !== baseWord) choices.add(simpleFallbacks[fallbackIdx]);
@@ -1076,21 +1179,34 @@
                 let capNext = shouldCapitalizeNext();
                 
                 for (let i = 0; i < phraseWords.length; i++) {
+                    let rawWord = phraseWords[i];
                     let wordOptions = new Set();
                     
-                    for (let altIndex = 0; altIndex < alternatives.length; altIndex++) {
-                        const altTranscript = alternatives[altIndex].transcript.trim().toLowerCase();
-                        const altWords = altTranscript.split(/\s+/);
-                        if (altWords.length === phraseWords.length) {
-                            let candidate = altWords[i];
-                            if (!isBadWord(candidate)) {
-                                wordOptions.add(candidate);
+                    const cleanRaw = rawWord.replace(/[^a-z0-9]/g, '');
+                    
+                    if (['to', 'two', 'too', '2'].includes(cleanRaw)) {
+                        wordOptions.add('to');
+                        wordOptions.add('two');
+                        wordOptions.add('too');
+                    } else if (['we', 'wee', 'way', 'whey', 'v', 'oui'].includes(cleanRaw)) {
+                        wordOptions.add('we');
+                        wordOptions.add('wee');
+                        wordOptions.add('way');
+                    } else {
+                        for (let altIndex = 0; altIndex < alternatives.length; altIndex++) {
+                            const altTranscript = alternatives[altIndex].transcript.trim().toLowerCase();
+                            const altWords = altTranscript.split(/\s+/);
+                            if (altWords.length === phraseWords.length) {
+                                let candidate = altWords[i];
+                                if (!isBadWord(candidate)) {
+                                    wordOptions.add(candidate);
+                                }
                             }
                         }
-                    }
-                    
-                    if (wordOptions.size === 0 && !isBadWord(phraseWords[i])) {
-                        wordOptions.add(phraseWords[i]);
+                        
+                        if (wordOptions.size === 0 && !isBadWord(rawWord)) {
+                            wordOptions.add(rawWord);
+                        }
                     }
                     
                     let optionsArray = Array.from(wordOptions);
@@ -1112,7 +1228,8 @@
                         optionsArray = optionsArray.map(w => w.charAt(0).toUpperCase() + w.slice(1));
                     }
                     
-                    phraseQueue.push(optionsArray.slice(0,3));
+                    optionsArray = shuffleArray(optionsArray.slice(0, 3));
+                    phraseQueue.push(optionsArray);
                 }
 
                 if (phraseQueue.length > 0) {
