@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Voice Choice Writer</title>
+    <title>WinWrite</title>
     <style>
         /* Imported Lexend, Playwrite GB S, and Playpen Sans */
         @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;600&family=Playpen+Sans:wght@400;600&family=Playwrite+GB+S:wght@400&display=swap');
@@ -185,6 +185,14 @@
             font-weight: 900;
             color: inherit;
             transition: all 0.2s;
+        }
+
+        /* SPEAKING HIGHLIGHT STYLING */
+        .speaking-highlight {
+            background-color: #ffff00 !important;
+            color: #000000 !important;
+            border-radius: 6px;
+            box-shadow: 0 0 8px #ffeb3b;
         }
 
         #sentence-box.features-on:not(.child-edit-active) .child-word:hover {
@@ -525,7 +533,7 @@
 
     <button id="top-settings-btn" title="Settings">⚙️</button>
 
-    <h1>🎙️ Voice Choice Writer ✍️</h1>
+    <h1>🎙️ WinWrite ✍️</h1>
     
     <div class="app-container">
         <!-- LEFT: Scrollable Sentence Box & Edit Bar -->
@@ -747,8 +755,7 @@
             "see": "👁️", "seeing": "👁️", "saw": "👁️",
             "listen": "👂", "listening": "👂",
             "hear": "👂", "hearing": "👂", "heard": "👂",
-            "talk": "🗣️", "talking": "🗣️",
-            "speak": "🗣️", "speaking": "🗣️", "spoke": "🗣️",
+            "talk": "🗣️", "talking": "🗣️", "speak": "🗣️", "speaking": "🗣️", "spoke": "🗣️",
             "cry": "😢", "crying": "😢", "cried": "😢",
             "laugh": "😂", "laughing": "😂", "laughed": "😂",
             "smile": "😊", "smiling": "😊", "smiled": "😊",
@@ -1733,14 +1740,47 @@
                 updateSentenceText(text); 
             });
 
+            // HIGHLIGHT READ-ALOUD INTEGRATION
             document.getElementById('read-sentence-btn').addEventListener('click', () => {
                 warmUpMicrophoneHardware();
                 let textToRead = getCurrentText();
-                if (textToRead) {
-                    speakTextNaturally(textToRead, 0.9);
-                } else {
+                if (!textToRead) {
                     statusText.innerText = "There is no text to read.";
+                    return;
                 }
+
+                window.speechSynthesis.cancel();
+                let utterance = new SpeechSynthesisUtterance(textToRead);
+                if (bestVoice) utterance.voice = bestVoice;
+                utterance.rate = 0.85;
+                utterance.pitch = 1.05;
+
+                // Sync word highlighting with Speech Synthesis events
+                let spans = document.querySelectorAll('#sentence-box span.child-word, #sentence-box span.child-punct');
+                let wordIndex = 0;
+
+                utterance.onboundary = (event) => {
+                    if (event.name === 'word' && !isTeacherMode) {
+                        spans.forEach(s => s.classList.remove('speaking-highlight'));
+                        while (wordIndex < spans.length && spans[wordIndex].classList.contains('child-punct')) {
+                            wordIndex++;
+                        }
+                        if (wordIndex < spans.length) {
+                            spans[wordIndex].classList.add('speaking-highlight');
+                            wordIndex++;
+                        }
+                    }
+                };
+
+                utterance.onend = () => {
+                    spans.forEach(s => s.classList.remove('speaking-highlight'));
+                };
+
+                utterance.onerror = () => {
+                    spans.forEach(s => s.classList.remove('speaking-highlight'));
+                };
+
+                window.speechSynthesis.speak(utterance);
             });
             
             updateModes(); 
