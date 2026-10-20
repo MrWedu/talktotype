@@ -36,7 +36,7 @@
             flex-shrink: 0;
         }
 
-        #contrast-toggle-btn {
+        #top-settings-btn {
             position: absolute;
             top: 12px;
             right: 12px;
@@ -511,7 +511,7 @@
 
         @media print {
             body { background-color: white !important; padding: 0 !important; margin: 0 !important; height: auto !important; overflow: visible !important; color: black !important; }
-            h1, .right-panel, .edit-header, .color-tint-bar, .modal-overlay, #status, #contrast-toggle-btn, #picture-tooltip, #grammar-tooltip { display: none !important; }
+            h1, .right-panel, .edit-header, .color-tint-bar, .modal-overlay, #status, #top-settings-btn, #picture-tooltip, #grammar-tooltip { display: none !important; }
             .app-container { display: block !important; max-width: 100% !important; height: auto !important; }
             .left-panel { width: 100% !important; height: auto !important; }
             #sentence-box {
@@ -523,7 +523,7 @@
 </head>
 <body>
 
-    <button id="contrast-toggle-btn" title="Toggle High Contrast">🌓</button>
+    <button id="top-settings-btn" title="Settings">⚙️</button>
 
     <h1>🎙️ Voice Choice Writer ✍️</h1>
     
@@ -531,7 +531,6 @@
         <!-- LEFT: Scrollable Sentence Box & Edit Bar -->
         <div class="left-panel">
             <div class="edit-header">
-                <button id="settings-btn" class="mode-btn" style="background-color: #455a64; box-shadow: 0 3px #263238;">⚙️ Settings</button>
                 <button id="tint-toggle-btn" class="mode-btn" style="background-color: #0288d1;">🎨 Color: OFF</button>
                 <button id="edit-toggle-btn" class="mode-btn">✏️ Edit Mode: OFF</button>
                 <button id="teacher-toggle-btn" class="mode-btn">👩‍🏫 Teacher Mode: OFF</button>
@@ -642,6 +641,11 @@
                 <input type="checkbox" id="grammar-toggle" checked style="transform: scale(1.5);">
             </div>
 
+            <div class="setting-row">
+                <label>High Contrast Mode:</label>
+                <input type="checkbox" id="contrast-toggle" style="transform: scale(1.5);">
+            </div>
+
             <div class="tier3-box">
                 <h3>👩‍🏫 Tier 3 Vocabulary (Picture Dictionary)</h3>
                 <div class="tier3-inputs">
@@ -693,7 +697,7 @@
         let isHighContrast = false;
         let isHoverReadOn = false;
         let isPictureHoverOn = false;
-        let isGrammarCheckOn = true; // NEW TOGGLE STATE
+        let isGrammarCheckOn = true;
 
         let restartTimer = null;
         let audioCtx = null;
@@ -759,15 +763,16 @@
         const pictureTooltip = document.getElementById('picture-tooltip');
         const grammarTooltip = document.getElementById('grammar-tooltip');
 
-        // --- NEW SETTINGS LOGIC --- //
+        // --- SETTINGS LOGIC --- //
         const settingsModal = document.getElementById('settings-modal');
-        const settingsBtn = document.getElementById('settings-btn');
+        const topSettingsBtn = document.getElementById('top-settings-btn');
         const closeSettingsBtn = document.getElementById('close-settings-btn');
         const fontSelect = document.getElementById('font-select');
         const grammarToggle = document.getElementById('grammar-toggle');
+        const contrastToggle = document.getElementById('contrast-toggle');
         const addTier3Btn = document.getElementById('add-tier3-btn');
 
-        settingsBtn.addEventListener('click', () => { settingsModal.style.display = 'flex'; });
+        topSettingsBtn.addEventListener('click', () => { settingsModal.style.display = 'flex'; });
         closeSettingsBtn.addEventListener('click', () => { settingsModal.style.display = 'none'; });
 
         fontSelect.addEventListener('change', (e) => {
@@ -776,7 +781,12 @@
 
         grammarToggle.addEventListener('change', (e) => {
             isGrammarCheckOn = e.target.checked;
-            renderChildSpans(getCurrentText()); // Re-render to clear/show errors immediately
+            renderChildSpans(getCurrentText());
+        });
+
+        contrastToggle.addEventListener('change', (e) => {
+            isHighContrast = e.target.checked;
+            document.body.classList.toggle('high-contrast', isHighContrast);
         });
 
         addTier3Btn.addEventListener('click', () => {
@@ -867,7 +877,6 @@
         
         const editToggleBtn = document.getElementById('edit-toggle-btn');
         const teacherToggleBtn = document.getElementById('teacher-toggle-btn');
-        const contrastToggleBtn = document.getElementById('contrast-toggle-btn');
         const capitalizeBtn = document.getElementById('capitalize-btn');
         const hoverReadToggleBtn = document.getElementById('hover-read-toggle-btn');
         const pictureHoverToggleBtn = document.getElementById('picture-hover-toggle-btn');
@@ -1216,11 +1225,6 @@
                 let lastChar = text.slice(-1);
                 return /[.!?]/.test(lastChar); 
             }
-
-            contrastToggleBtn.addEventListener('click', () => {
-                isHighContrast = !isHighContrast;
-                document.body.classList.toggle('high-contrast', isHighContrast);
-            });
 
             hoverReadToggleBtn.addEventListener('click', () => {
                 isHoverReadOn = !isHoverReadOn;
